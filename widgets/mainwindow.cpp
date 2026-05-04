@@ -14454,16 +14454,27 @@ bool MainWindow::setFreeFreq() {
   }
 
   if (newTxFreq == 0) {
-    int const maxDelta = qMax(currentTxFreq - minFreq, maxFreq - currentTxFreq);
+    auto wrap_freq = [minFreq, maxFreq] (int f) {
+      int const span = maxFreq - minFreq + 10;
+      while (f < minFreq) {
+        f += span;
+      }
+      while (f > maxFreq) {
+        f -= span;
+      }
+      return f;
+    };
+
+    int const maxDelta = maxFreq - minFreq;
     for (int delta = 10; delta <= maxDelta; delta += 10) {
-      int below = currentTxFreq - delta;
-      if (in_range(below) && isSlotFree(below)) {
+      int below = wrap_freq(currentTxFreq - delta);
+      if (isSlotFree(below)) {
         newTxFreq = below;
         break;
       }
 
-      int above = currentTxFreq + delta;
-      if (in_range(above) && isSlotFree(above)) {
+      int above = wrap_freq(currentTxFreq + delta);
+      if (above != below && isSlotFree(above)) {
         newTxFreq = above;
         break;
       }
