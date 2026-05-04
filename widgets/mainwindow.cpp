@@ -14441,38 +14441,48 @@ bool MainWindow::setFreeFreq() {
         return false;
     }
 
-    int newTxFreq = 0;
+  int newTxFreq = 0;
+  int const currentTxFreq = ui->TxFreqSpinBox->value();
+  auto const wide = m_config.autoFreqWide();
 
-    for (int f = 1500; f > 500; f -= 10)  {
-        if (isSlotFree(f)) {
-            newTxFreq = f;
-            break;
-        }
-    }
+  int minFreq = wide ? 200 : 500;
+  int maxFreq = wide ? 3000 : 2000;
 
-    if (newTxFreq == 0)
-    for (int f = 1500; f < 2000; f += 10)  {
-        if (isSlotFree(f)) {
-            newTxFreq = f;
-            break;
-        }
-    }
+  auto in_range = [minFreq, maxFreq] (int f) {
+    return f >= minFreq && f <= maxFreq;
+  };
 
-    if (newTxFreq == 0 && m_config.autoFreqWide())
-    for (int f = 2000; f <= 3000; f += 10)  {
-        if (isSlotFree(f)) {
-            newTxFreq = f;
-            break;
-        }
-    }
+  if (in_range(currentTxFreq) && isSlotFree(currentTxFreq)) {
+    newTxFreq = currentTxFreq;
+  }
 
-    if (newTxFreq == 0 && m_config.autoFreqWide())
-    for (int f = 500; f >= 200; f -= 10)  {
-        if (isSlotFree(f)) {
-            newTxFreq = f;
-            break;
-        }
+  if (newTxFreq == 0) {
+    auto wrap_freq = [minFreq, maxFreq] (int f) {
+      int const span = maxFreq - minFreq + 10;
+      while (f < minFreq) {
+        f += span;
+      }
+      while (f > maxFreq) {
+        f -= span;
+      }
+      return f;
+    };
+
+    int const maxDelta = maxFreq - minFreq;
+    for (int delta = 10; delta <= maxDelta; delta += 10) {
+      int below = wrap_freq(currentTxFreq - delta);
+      if (isSlotFree(below)) {
+        newTxFreq = below;
+        break;
+      }
+
+      int above = wrap_freq(currentTxFreq + delta);
+      if (above != below && isSlotFree(above)) {
+        newTxFreq = above;
+        break;
+      }
     }
+  }
 
     if(newTxFreq != 0) {
         if (m_zdebug) log("Free: " + QString::number(newTxFreq));
