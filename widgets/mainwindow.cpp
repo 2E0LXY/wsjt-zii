@@ -13819,6 +13819,9 @@ void MainWindow::leftClickHandler(Qt::KeyboardModifiers modifiers) {
   if(modifiers==(Qt::ControlModifier)) {
     dxLookup(NULL, NULL);
   } else {
+    if (ui->decodedTextBrowser->hasFocus() && !m_config.copyOnClickBA()) {
+      return;
+    }
       if (ui->decodedTextBrowser->hasFocus()) {
           ui->decodedTextBrowser->copy();
       } else {

@@ -237,6 +237,7 @@ public:
   bool noFoxQSY() const;
   bool showState() const;
   bool rawViewDXCC() const;
+  bool copyOnClickBA() const;
   bool clearRX() const;
   int padding() const;
   int ignoreListReset() const;

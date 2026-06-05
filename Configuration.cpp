@@ -839,6 +839,7 @@ private:
   bool noFoxQSY_;
   bool showState_;
   bool rawViewDXCC_;
+  bool copyOnClickBA_;
   bool clearRx_;
   bool freezeBA_;
   bool removeExtra_;
@@ -993,6 +994,7 @@ bool Configuration::autoTXFreq() const {return m_->autoTXFreq_;}
 bool Configuration::noFoxQSY() const {return m_->noFoxQSY_;}
 bool Configuration::showState() const {return m_->showState_;}
 bool Configuration::rawViewDXCC() const {return m_->rawViewDXCC_;}
+bool Configuration::copyOnClickBA() const {return m_->copyOnClickBA_;}
 bool Configuration::clearRX() const {return m_->clearRx_;}
 bool Configuration::freezeBA() const {return m_->freezeBA_;}
 bool Configuration::removeExtra() const {return m_->removeExtra_;}
@@ -1831,6 +1833,7 @@ void Configuration::impl::initialize_models ()
   ui_->cb_noFoxQSY->setChecked(noFoxQSY_);
   ui_->cb_showState->setChecked(showState_);
   ui_->cb_rawViewDXCC->setChecked(rawViewDXCC_);
+  ui_->cb_copyOnClickBA->setChecked(copyOnClickBA_);
   ui_->cb_clearRx->setChecked(clearRx_);
   ui_->cb_freezeBA->setChecked(freezeBA_);
   ui_->cb_removeExtra->setChecked(removeExtra_);
@@ -2115,6 +2118,7 @@ void Configuration::impl::read_settings ()
   noFoxQSY_ = settings_->value("noFoxQSY", false).toBool();
   showState_ = settings_->value("showState", false).toBool();
   rawViewDXCC_ = settings_->value("rawViewDXCC", false).toBool();
+  copyOnClickBA_ = settings_->value("copyOnClickBA", true).toBool();
   clearRx_ = settings_->value("clearRx", false).toBool();
   freezeBA_ = settings_->value("freezeBA", false).toBool();
   removeExtra_ = settings_->value("removeExtra", false).toBool();
@@ -2310,6 +2314,7 @@ void Configuration::impl::write_settings ()
   settings_->setValue("noFoxQSY", noFoxQSY_);
   settings_->setValue("showState", showState_);
   settings_->setValue("rawViewDXCC", rawViewDXCC_);
+  settings_->setValue("copyOnClickBA", copyOnClickBA_);
   settings_->setValue("clearRx", clearRx_);
   settings_->setValue("freezeBA", freezeBA_);
   settings_->setValue("removeExtra", removeExtra_);
@@ -2886,6 +2891,7 @@ void Configuration::impl::accept ()
   noFoxQSY_ = ui_->cb_noFoxQSY->isChecked();
   showState_ = ui_->cb_showState->isChecked();
   rawViewDXCC_ = ui_->cb_rawViewDXCC->isChecked();
+  copyOnClickBA_ = ui_->cb_copyOnClickBA->isChecked();
   clearRx_ = ui_->cb_clearRx->isChecked();
   freezeBA_ = ui_->cb_freezeBA->isChecked();
   removeExtra_ = ui_->cb_removeExtra->isChecked();
