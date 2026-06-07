@@ -571,6 +571,7 @@ private:
   QThread m_audioThread;
 
   qint64  m_msErase;
+  int     m_nEraseClicks;
   qint64  m_secBandChanged;
   qint64  m_freqMoon;
   qint64  m_fullFoxCallTime;

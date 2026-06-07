@@ -327,6 +327,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_rx_audio_buffer_frames {0},
   m_tx_audio_buffer_frames {0},
   m_msErase {0},
+  m_nEraseClicks {0},
   m_secBandChanged {0},
   m_freqNominal {0},
   m_freqNominalPeriod {0},
@@ -3232,6 +3233,23 @@ bool MainWindow::eventFilter (QObject * object, QEvent * event)
       // Z
       if (m_config.wdResetAnywhere())
       tx_watchdog (false);
+      if (object == ui->EraseButton) {
+        auto const *mouseEvent = static_cast<QMouseEvent const *> (event);
+        if (mouseEvent->button() == Qt::RightButton) {
+          ui->tx1->clear();
+          ui->tx2->clear();
+          ui->tx3->clear();
+          ui->tx4->clear();
+          ui->tx5->clearEditText();
+          ui->dxCallEntry->clear();
+          ui->dxGridEntry->clear();
+          ui->txrb6->setChecked(true);
+          if (ui->cbAutoCall->isChecked() && m_bDoubleClicked) {
+            on_stopTxButton_clicked();
+          }
+          return true; // eat the event
+        }
+      }
       break;
 
     case QEvent::ChildAdded:
@@ -5833,18 +5851,36 @@ void MainWindow::killFile ()
 
 void MainWindow::on_EraseButton_clicked ()
 {
-  qint64 ms=QDateTime::currentMSecsSinceEpoch();
-  ui->decodedTextBrowser2->erase ();
-  if(m_mode=="WSPR" or m_mode=="Echo" or m_mode=="FST4W") {
-    ui->decodedTextBrowser->erase ();
-  } else {
-    if((ms-m_msErase)<500) {
-      ui->decodedTextBrowser->erase ();
-      // Z
-      if (m_unfilteredView) m_unfilteredView->erase();
-    }
+  qint64 ms = QDateTime::currentMSecsSinceEpoch();
+  if ((ms - m_msErase) > 500) {
+    m_nEraseClicks = 0;
   }
-  m_msErase=ms;
+
+  ++m_nEraseClicks;
+  ui->decodedTextBrowser2->erase ();
+
+  bool eraseBoth = (m_mode=="WSPR" or m_mode=="Echo" or m_mode=="FST4W") || (m_nEraseClicks >= 2);
+  if (eraseBoth) {
+    ui->decodedTextBrowser->erase (); 
+    if (m_unfilteredView) m_unfilteredView->erase();
+  }
+
+  if (m_nEraseClicks >= 3) {
+    ui->tx1->clear();
+    ui->tx2->clear();
+    ui->tx3->clear();
+    ui->tx4->clear();
+    ui->tx5->clearEditText();
+    ui->dxCallEntry->clear();
+    ui->dxGridEntry->clear();
+    ui->txrb6->setChecked(true);
+    if (ui->cbAutoCall->isChecked() && m_bDoubleClicked) {
+      on_stopTxButton_clicked();
+    }
+    m_nEraseClicks = 0;
+  }
+
+  m_msErase = ms;
 }
 
 void MainWindow::band_activity_cleared ()
