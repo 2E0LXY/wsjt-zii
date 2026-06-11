@@ -59,12 +59,12 @@ int q65_init(q65_codec_ds *pCodec, 	const qracode *pqracode)
 	pCodec->pQraCode = pqracode;
 
 	// allocate buffers used by encoding/decoding functions
-	pCodec->x			= (int*)malloc(pqracode->K*sizeof(int));
-	pCodec->y			= (int*)malloc(pqracode->N*sizeof(int));
-	pCodec->qra_v2cmsg	= (float*)malloc(pqracode->NMSG*pqracode->M*sizeof(float));
-	pCodec->qra_c2vmsg	= (float*)malloc(pqracode->NMSG*pqracode->M*sizeof(float));
-	pCodec->ix			= (float*)malloc(pqracode->N*pqracode->M*sizeof(float));
-	pCodec->ex			= (float*)malloc(pqracode->N*pqracode->M*sizeof(float));
+	pCodec->x			= (int*)malloc((unsigned long)pqracode->K*sizeof(int));
+	pCodec->y			= (int*)malloc((unsigned long)pqracode->N*sizeof(int));
+	pCodec->qra_v2cmsg	= (float*)malloc((unsigned long)pqracode->NMSG*pqracode->M*sizeof(float));
+	pCodec->qra_c2vmsg	= (float*)malloc((unsigned long)pqracode->NMSG*pqracode->M*sizeof(float));
+	pCodec->ix			= (float*)malloc((unsigned long)pqracode->N*pqracode->M*sizeof(float));
+	pCodec->ex			= (float*)malloc((unsigned long)pqracode->N*pqracode->M*sizeof(float));
 
 	if (pCodec->x== NULL			||
 		pCodec->y== NULL			||
@@ -537,6 +537,9 @@ int q65_decode(q65_codec_ds *pCodec, int* pDecodedCodeword, int *pDecodedMsg,
 	int		rc;
 	int		crc6;
 	int		crc12[2];
+	size_t	nk_nm;
+	size_t	nn_nm;
+	size_t	parity_nm;
 
 	if (!pCodec)
 		return Q65_DECODE_INVPARAMS;	// which codec?
@@ -549,6 +552,9 @@ int q65_decode(q65_codec_ds *pCodec, int* pDecodedCodeword, int *pDecodedMsg,
 	nN			= _q65_get_codeword_length(pQraCode);
 	nM			= pQraCode->M;
 	nBits		= pQraCode->m;
+	nk_nm		= (size_t)nK * (size_t)nM;
+	nn_nm		= (size_t)nN * (size_t)nM;
+	parity_nm	= (size_t)(nN - nK) * (size_t)nM;
 
 	px			= pCodec->x;
 	py			= pCodec->y;
@@ -556,21 +562,21 @@ int q65_decode(q65_codec_ds *pCodec, int* pDecodedCodeword, int *pDecodedMsg,
 	// Depuncture intrinsics observations as required by the code type
 	switch (pQraCode->type) {
 		case QRATYPE_CRCPUNCTURED:
-			memcpy(ix,pIntrinsics,nK*nM*sizeof(float));							// information symbols
+			memcpy(ix,pIntrinsics,nk_nm*sizeof(float));							// information symbols
 			pd_init(PD_ROWADDR(ix,nM,nK),pd_uniform(nBits),nM);					// crc
-			memcpy(ix+(nK+1)*nM,pIntrinsics+nK*nM,(nN-nK)*nM*sizeof(float));	// parity checks
+			memcpy(ix+(((size_t)nK+1u)*(size_t)nM),pIntrinsics+nk_nm,parity_nm*sizeof(float));	// parity checks
 			break;
 		case QRATYPE_CRCPUNCTURED2:
-			memcpy(ix,pIntrinsics,nK*nM*sizeof(float));							// information symbols
+			memcpy(ix,pIntrinsics,nk_nm*sizeof(float));							// information symbols
 			pd_init(PD_ROWADDR(ix,nM,nK),pd_uniform(nBits),nM);					// crc
 			pd_init(PD_ROWADDR(ix,nM,nK+1),pd_uniform(nBits),nM);				// crc
-			memcpy(ix+(nK+2)*nM,pIntrinsics+nK*nM,(nN-nK)*nM*sizeof(float));	// parity checks
+			memcpy(ix+(((size_t)nK+2u)*(size_t)nM),pIntrinsics+nk_nm,parity_nm*sizeof(float));	// parity checks
 			break;
 		case QRATYPE_NORMAL:
 		case QRATYPE_CRC:
 		default:
 			// no puncturing
-			memcpy(ix,pIntrinsics,nN*nM*sizeof(float));							// as they are
+			memcpy(ix,pIntrinsics,nn_nm*sizeof(float));							// as they are
 		}
 
 	// mask the intrinsics with the available a priori knowledge

@@ -233,12 +233,12 @@ void wer_test_thread_awgnrayl(wer_test_ds *pdata)
 
 	nSamples = nN*nM;
 
-	x			= (int*)malloc(nK*sizeof(int));
-	xdec		= (int*)malloc(nK*sizeof(int));
-	y			= (int*)malloc(nN*sizeof(int));
-	ydec		= (int*)malloc(nN*sizeof(int));
-	rsquared	= (float*)malloc(nSamples*sizeof(float));
-	pIntrinsics	= (float*)malloc(nSamples*sizeof(float));
+	x			= (int*)malloc((unsigned long)nK*sizeof(int));
+	xdec		= (int*)malloc((unsigned long)nK*sizeof(int));
+	y			= (int*)malloc((unsigned long)nN*sizeof(int));
+	ydec		= (int*)malloc((unsigned long)nN*sizeof(int));
+	rsquared	= (float*)malloc((unsigned long)nSamples*sizeof(float));
+	pIntrinsics	= (float*)malloc((unsigned long)nSamples*sizeof(float));
 
 	// sets the AP mask to be used for this simulation
 	if (pdata->ap_index==AP_NONE)
@@ -247,10 +247,10 @@ void wer_test_thread_awgnrayl(wer_test_ds *pdata)
 		apMask = ap_masks_q65[pdata->ap_index];
 
 	// Channel simulation variables --------------------
-	rp	 = (float*)malloc(nSamples*sizeof(float));
-	rq	 = (float*)malloc(nSamples*sizeof(float));
-	chp	 = (float*)malloc(nN*sizeof(float));
-	chq	 = (float*)malloc(nN*sizeof(float));
+	rp	 = (float*)malloc((unsigned long)nSamples*sizeof(float));
+	rq	 = (float*)malloc((unsigned long)nSamples*sizeof(float));
+	chp	 = (float*)malloc((unsigned long)nN*sizeof(float));
+	chq	 = (float*)malloc((unsigned long)nN*sizeof(float));
 
 	EbNo = (float)powf(10,pdata->EbNodB/10);
 	EsNo = 1.0f*nm*R*EbNo;
@@ -439,7 +439,7 @@ void wer_test_thread_ff(wer_test_ds *pdata)
 	y			= (int*)malloc(nN*sizeof(int));
 	ydec		= (int*)malloc(nN*sizeof(int));
 	rsquared	= (float*)malloc(nSamples*sizeof(float));
-	pIntrinsics	= (float*)malloc(nN*nM*sizeof(float));
+	pIntrinsics	= (float*)malloc((unsigned long)nN*nM*sizeof(float));
 
 	// Channel simulation variables --------------------
 	rp	 = (float*)malloc(nSamples*sizeof(float));

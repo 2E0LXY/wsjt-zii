@@ -459,18 +459,18 @@ int wer_test_proc(const qracode *pcode, int nthreads, int chtype, int ap_index, 
 			wt[j].channel_type=chtype;
 			wt[j].ap_index = ap_index;
 			wt[j].pcode    = pcode;
-			wt[j].x        = (int*)malloc(pcode->K*sizeof(int));
-			wt[j].y        = (int*)malloc(pcode->N*sizeof(int));
-			wt[j].ydec     = (int*)malloc(pcode->N*sizeof(int));
-			wt[j].qra_v2cmsg = (float*)malloc(pcode->NMSG*pcode->M*sizeof(float));
-			wt[j].qra_c2vmsg = (float*)malloc(pcode->NMSG*pcode->M*sizeof(float));
-			wt[j].rp       = (float*)malloc(pcode->N*pcode->M*sizeof(float));
-			wt[j].rq       = (float*)malloc(pcode->N*pcode->M*sizeof(float));
-			wt[j].chp      = (float*)malloc(pcode->N*sizeof(float));
-			wt[j].chq      = (float*)malloc(pcode->N*sizeof(float));
-			wt[j].r        = (float*)malloc(pcode->N*pcode->M*sizeof(float));
-			wt[j].ix       = (float*)malloc(pcode->N*pcode->M*sizeof(float));
-			wt[j].ex       = (float*)malloc(pcode->N*pcode->M*sizeof(float));
+			wt[j].x        = (int*)malloc((unsigned long)pcode->K*sizeof(int));
+			wt[j].y        = (int*)malloc((unsigned long)pcode->N*sizeof(int));
+			wt[j].ydec     = (int*)malloc((unsigned long)pcode->N*sizeof(int));
+			wt[j].qra_v2cmsg = (float*)malloc((unsigned long)pcode->NMSG*pcode->M*sizeof(float));
+			wt[j].qra_c2vmsg = (float*)malloc((unsigned long)pcode->NMSG*pcode->M*sizeof(float));
+			wt[j].rp       = (float*)malloc((unsigned long)pcode->N*pcode->M*sizeof(float));
+			wt[j].rq       = (float*)malloc((unsigned long)pcode->N*pcode->M*sizeof(float));
+			wt[j].chp      = (float*)malloc((unsigned long)pcode->N*sizeof(float));
+			wt[j].chq      = (float*)malloc((unsigned long)pcode->N*sizeof(float));
+			wt[j].r        = (float*)malloc((unsigned long)pcode->N*pcode->M*sizeof(float));
+			wt[j].ix       = (float*)malloc((unsigned long)pcode->N*pcode->M*sizeof(float));
+			wt[j].ex       = (float*)malloc((unsigned long)pcode->N*pcode->M*sizeof(float));
 		}
 
 
