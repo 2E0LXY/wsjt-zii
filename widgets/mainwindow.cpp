@@ -1732,6 +1732,26 @@ void MainWindow::readSettings()
   ui->actionHide_AP_info->setChecked(m_settings->value("HideAPInfo", false).toBool());
   ui->actionNo_MTD_a8_decodes->setChecked(m_settings->value("NoMTDa8Decodes", false).toBool());
   ui->actionFull_Duplex_Mode->setChecked(m_settings->value("FullDuplexMode", false).toBool());
+  if (m_zdebug) {
+    log(QString("Startup config: UseMultithreadedFT8=%1 FT8threads=%2 FT8Sensitivity=%3 FT8DecoderStart=%4 FT8RXfreqSens=%5 FT8Cycles=%6 FT8WideDXCallSearch=%7 HideFT8Dupes=%8 ReduceFalseDecodes=%9 SkipA8Decodes=%10")
+          .arg(ui->actionUse_multithreaded_FT8_decoder->isChecked())
+          .arg(m_ft8threads)
+          .arg(m_ft8Sensitivity)
+          .arg(m_ft8DecoderStart)
+          .arg(m_nFT8RXfSens)
+          .arg(m_nFT8Cycles)
+          .arg(m_FT8WideDxCallSearch)
+          .arg(ui->actionHide_FT8_dupe_messages->isChecked())
+          .arg(ui->actionReduce_false_decodes->isChecked())
+          .arg(ui->actionNo_MTD_a8_decodes->isChecked()));
+    log(QString("Startup platform: OS=%1 type=%2 version=%3 arch=%4 wordSize=%5 kernel=%6")
+          .arg(QSysInfo::prettyProductName())
+          .arg(QSysInfo::productType())
+          .arg(QSysInfo::productVersion())
+          .arg(QSysInfo::currentCpuArchitecture())
+          .arg(QSysInfo::WordSize)
+          .arg(QSysInfo::kernelVersion()));
+  }
   m_settings->endGroup();
 
   // Reflect current m_ft8threads in the radio menu
@@ -2811,6 +2831,15 @@ void MainWindow::on_autoButton_clicked (bool checked)
   if (checked) tx_watchdog(false);
   stopWRTimer.stop();             // stop a running Tx3 timer
   m_auto = checked;
+  if (m_zdebug) log(QString("on_autoButton_clicked: checked=%1 m_auto=%2 cbAutoSeq=%3 cbAutoCQ=%4 cbAutoCall=%5 m_bCallingCQ=%6 m_bAutoReply=%7 m_QSOProgress=%8")
+                      .arg(checked)
+                      .arg(m_auto)
+                      .arg(ui->cbAutoSeq->isChecked())
+                      .arg(ui->cbAutoCQ->isChecked())
+                      .arg(ui->cbAutoCall->isChecked())
+                      .arg(m_bCallingCQ)
+                      .arg(m_bAutoReply)
+                      .arg(m_QSOProgress));
   m_maxPoints=-1;
   if (checked
       && ui->respondComboBox->isVisible () && ui->respondComboBox->currentText() != "CQ: None"
@@ -5956,15 +5985,23 @@ void MainWindow::readFromStdout()                             //readFromStdout
 //
 void MainWindow::auto_sequence (DecodedText const& message, unsigned start_tolerance, unsigned stop_tolerance)
 {
-  if (m_zdebug) log(QString("auto_sequence: msg=%1 isStd=%2 m_auto=%3 cbAutoSeq=%4 m_bCallingCQ=%5 m_bAutoReply=%6 m_QSOProgress=%7")
-                      .arg(message.string())
-                      .arg(message.isStandardMessage())
-                      .arg(m_auto)
-                      .arg(ui->cbAutoSeq->isChecked())
-                      .arg(m_bCallingCQ)
-                      .arg(m_bAutoReply)
-                      .arg(m_QSOProgress));
   auto const& message_words = message.messageWords ();
+  if (m_zdebug) {
+    log(QString("auto_sequence: msg=%1 isStd=%2 m_auto=%3 cbAutoSeq=%4 cbAutoCQ=%5 cbAutoCall=%6 autoButton=%7 m_bCallingCQ=%8 m_bAutoReply=%9 m_QSOProgress=%10 m_transmitting=%11 lastCall=%12")
+          .arg(message.string())
+          .arg(message.isStandardMessage())
+          .arg(m_auto)
+          .arg(ui->cbAutoSeq->isChecked())
+          .arg(ui->cbAutoCQ->isChecked())
+          .arg(ui->cbAutoCall->isChecked())
+          .arg(ui->autoButton->isChecked())
+          .arg(m_bCallingCQ)
+          .arg(m_bAutoReply)
+          .arg(m_QSOProgress)
+          .arg(m_transmitting)
+          .arg(m_lastCall));
+    log(QString("  messageWords=[%1]").arg(message_words.join(",")));
+  }
   auto is_73 = message_words.filter (QRegularExpression {"^(73|RR73)$"}).size();
   auto msg_no_hash = message.clean_string();
   msg_no_hash = msg_no_hash.mid(22).remove("<").remove(">");
@@ -5981,6 +6018,14 @@ void MainWindow::auto_sequence (DecodedText const& message, unsigned start_toler
 
   bool is_OK=false;
   if(m_mode=="MSK144" && msg_no_hash.indexOf(ui->dxCallEntry->text()+" R ")>0) is_OK=true;
+  if (!(message_words.size () > 3 && (message.isStandardMessage() || (is_73 || is_OK)))) {
+    if (m_zdebug) log(QString("auto_sequence: skipped: size=%1 isStd=%2 is_73=%3 is_OK=%4")
+                      .arg(message_words.size())
+                      .arg(message.isStandardMessage())
+                      .arg(is_73)
+                      .arg(is_OK));
+    return;
+  }
   if (message_words.size () > 3 && (message.isStandardMessage() || (is_73 or is_OK))) {
     auto df = message.frequencyOffset ();
     auto within_tolerance = (qAbs (ui->RxFreqSpinBox->value () - df) <= int (start_tolerance)
@@ -6030,7 +6075,11 @@ void MainWindow::auto_sequence (DecodedText const& message, unsigned start_toler
         && !message_words.at (3).contains (m_config.my_callsign ())) {
       // auto stop to avoid accidental QRM
         // Z
-        if (m_zdebug) log("Automatic TX halt");
+      if (m_zdebug) log(QString("auto_sequence stop branch: df=%1 stop_tolerance=%2 m_QSOProgress=%3 message_words[2]=%4 message_words[3]=%5 dxCall=%6")
+                        .arg(df).arg(stop_tolerance).arg(m_QSOProgress)
+                        .arg(message_words.at(2)).arg(message_words.at(3)).arg(ui->dxCallEntry->text()));
+      // Z
+      if (m_zdebug) log("Automatic TX halt");
       ui->stopTxButton->click (); // halt any transmission
       LOG_INFO("STOPPED!");
       if (ui->cbAutoCQ->isChecked() || ui->cbAutoCall->isChecked()) clearDX();
@@ -6055,6 +6104,14 @@ void MainWindow::auto_sequence (DecodedText const& message, unsigned start_toler
       if(SpecOp::FOX != m_specOp)
       {
           // Z
+          if (m_zdebug) log(QString("auto_sequence response branch: hiscall=%1 hisgrid=%2 addressed_to_me=%3 within_tolerance=%4 acceptable_73=%5 m_transmitting=%6 m_ntx=%7")
+                            .arg(hiscall)
+                            .arg(hisgrid)
+                            .arg(addressed_to_me)
+                            .arg(within_tolerance)
+                            .arg(acceptable_73)
+                            .arg(m_transmitting)
+                            .arg(m_ntx));
           if (!m_transmitting || hiscall == m_hisCall || m_ntx == 6) {
             if (m_zdebug) log("Processing response");
             processMessage (message);
@@ -6071,7 +6128,14 @@ void MainWindow::auto_sequence (DecodedText const& message, unsigned start_toler
                && (!m_transmitting)
                )
     {
-
+        if (m_zdebug) log(QString("auto_sequence tailender branch: addressed_to_me=%1 message_words[2]=%2 m_QSOProgress=%3 terminal_signoff=%4 tailender_ok=%5 m_lastCall=%6 hiscall=%7")
+                          .arg(addressed_to_me)
+                          .arg(message_words.at(2))
+                          .arg(m_QSOProgress)
+                          .arg(terminal_signoff)
+                          .arg(m_config.processTailenders() || m_lastCall == hiscall)
+                          .arg(m_lastCall)
+                          .arg(hiscall));
         if (m_zdebug) log("Processing tail-end response");
         if (m_zdebug) log(": m_transmitting: " + QString::number(m_transmitting));
         if (m_zdebug) log(": m_QSOProgress: " + QString::number(m_QSOProgress));
@@ -7408,6 +7472,14 @@ void MainWindow::processMessage (DecodedText const& message, Qt::KeyboardModifie
   ui->txFirstCheckBox->setChecked(m_txFirst);
 
   auto const& message_words = message.messageWords ();
+  if (m_zdebug) log(QString("processMessage: msg=%1 mode=%2 m_QSOProgress=%3 m_auto=%4 auto_seq=%5 m_hisCall=%6 m_lastCall=%7")
+                    .arg(message.clean_string())
+                    .arg(m_mode)
+                    .arg(m_QSOProgress)
+                    .arg(m_auto)
+                    .arg(auto_seq)
+                    .arg(m_hisCall)
+                    .arg(m_lastCall));
   if (message_words.size () < 3) return;
 
   QString hiscall;
@@ -8801,6 +8873,7 @@ void MainWindow::on_logQSOButton_clicked()                 //Log QSO button
                            ui->TxFreqSpinBox->value(), m_noSuffix, m_xSent, m_xRcvd);
 
          if (m_config.rxTotxFreq()) on_pbT2R_clicked();
+         if (m_zdebug) log("Updating m_lastCall from " + m_lastCall + " to " + m_hisCall);
          m_lastCall = m_hisCall;
          if (ui->cbAutoCQ->isChecked() || ui->cbAutoCall->isChecked()) {
              if (m_zdebug) log("QSO Logged: " + m_hisCall);
@@ -13590,6 +13663,12 @@ bool MainWindow::callsignFiltered(DecodedText dt)
     if (m_zdebug) log("message:" + dt.string());
     dt.deCallAndGrid (/*out*/ dxCall, dxGrid);
     if (m_zdebug) log("dxCall: " + dxCall);
+    if (m_zdebug) log(QString("callsignFiltered: dxCall=%1 dxGrid=%2 filtering=%3 minDb=%4 LOTW=%5")
+                      .arg(dxCall)
+                      .arg(dxGrid)
+                      .arg(ui->cb_filtering->isChecked())
+                      .arg(ui->sbMindB->value())
+                      .arg(ui->cb_f_LOTW->isChecked()));
     int nmod;
     if(m_mode=="FT2") {
       int period = (int)round(double(dt.timeInSeconds()) / m_TRperiod);
@@ -13651,11 +13730,16 @@ bool MainWindow::callsignFiltered(DecodedText dt)
     }
 
 
-    // Minimum signal strngth filter
+    // Minimum signal strength filter
     QString dbM = dt.report();
-    if (ui->sbMindB->value() > -30 && dbM.toInt() < ui->sbMindB->value()) {
-        if (m_zdebug) log("callsignFiltered: Station signal strength under threshold: " + dbM);
-        return true;
+    if (ui->sbMindB->value() > -30) {
+        if (m_zdebug) log(QString("callsignFiltered: Min signal threshold=%1 actual=%2")
+                          .arg(ui->sbMindB->value())
+                          .arg(dbM));
+        if (dbM.toInt() < ui->sbMindB->value()) {
+            if (m_zdebug) log("callsignFiltered: Station signal strength under threshold: " + dbM);
+            return true;
+        }
     }
 
     // Continent filter
@@ -13931,7 +14015,10 @@ bool MainWindow::callsignFiltered(DecodedText dt)
     if (m_zdebug) log("Call not filtered: " + dxCall);
 
     if ( !is_CQ && !(ui->cbCQonlyIncl73->isChecked() && is_73) ) {
-        if (m_zdebug) log("Not CQ/73. Exiting.");
+        if (m_zdebug) log(QString("Not CQ/73. Exiting. is_CQ=%1 is_73=%2 cbCQonlyIncl73=%3")
+                          .arg(is_CQ)
+                          .arg(is_73)
+                          .arg(ui->cbCQonlyIncl73->isChecked()));
         return false;
     }
 
