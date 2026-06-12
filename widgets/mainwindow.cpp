@@ -6096,7 +6096,7 @@ void MainWindow::auto_sequence (DecodedText const& message, unsigned start_toler
                             (acceptable_73 ||
                              ("DE" == message_words.at (2) &&
                               w2.contains(Radio::base_callsign (m_hisCall)))))))
-                   || (m_bCallingCQ && m_bAutoReply
+                   || (m_bCallingCQ && m_bAutoReply && !m_sentFirst73
                        // look for type 2 compound call replies on our Tx and Rx offsets
                        && ((within_tolerance && "DE" == message_words.at (2))
                            || message_words.at (2).contains (m_baseCall))))) {
