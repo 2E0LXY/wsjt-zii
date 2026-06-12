@@ -1,4 +1,13 @@
 == Changelog
+V2.0.15
+[features]
+- Pile-up mode for Auto Call: right-click the Auto Call checkbox to toggle. When enabled, all continent filters are temporarily disabled so you respond to stations calling you directly without adding to the pile-up. Continent settings are saved and restored when pile-up mode is toggled off. The Auto Call label turns red while active (PR #73, SpudGunMan).
+- PSK Reporter band-activity feedback: when PSK Reporter spotting is enabled, band-activity lines from stations also heard by PSK Reporter receivers on the current band+mode are visually highlighted (bold or underline) so you can see at a glance which decodes are being copied elsewhere (PR #69, SpudGunMan).
+
+[tooling]
+- WSJT-Z Debug mode now emits significantly more diagnostic context: startup config dump (FT8 thread count, decoder start mode, sensitivity, cycles, etc.), platform info (OS, arch, kernel), and per-branch state in auto_sequence / processMessage / on_autoButton_clicked. Helps triage support reports without asking the operator to reproduce in custom debug builds (PR #68, SpudGunMan).
+- New UDP example: `UDPExamples/decode_WSJT-UDP.py`, a Python reference for parsing the WSJT-X UDP decode stream (PR #72, SpudGunMan).
+
 V2.0.13
 [fixes]
 - Auto-sequence stop condition now requires the selected DX call to actually be the transmitting station in the decode, and the reply target to not be your own call. Previously the stop could trigger when the selected DX was being called by someone else (PR #25, SpudGunMan).
