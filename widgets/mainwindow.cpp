@@ -2862,6 +2862,10 @@ void MainWindow::auto_tx_mode (bool state)
 {
   // Z
   if (m_zdebug) log("AutoTxMode: " + QString::number(state));
+  if (state && m_tx_watchdog) {
+    if (m_zdebug) log("AutoTxMode ignored because TX watchdog is active");
+    return;
+  }
   if (state) tx_watchdog(false);
 
   if (!state && ui->cbAutoCQ->isChecked()) return;
@@ -6340,6 +6344,11 @@ void MainWindow::guiUpdate()
   }
   if(m_tune) m_bTxTime=true;                 //"Tune" takes precedence
 
+  if (m_watchdogPendingDisable && !m_bTxTime) {
+    tx_watchdog(true);
+    m_watchdogPendingDisable = false;
+  }
+
   if(m_transmitting or m_auto or m_tune) {
     m_dateTimeLastTX = now;
 
@@ -6418,13 +6427,17 @@ void MainWindow::guiUpdate()
     if (wd_enabled && m_idleMinutes >= wd_limit) {
       if (ui->cbAutoCQ->isChecked()) {
         if (m_bTxTime) {
-          m_autoCQWatchdogPending = false;
-          tx_watchdog (true);       // disable transmit
+          m_autoCQWatchdogPending = true;
+          m_watchdogPendingDisable = true;
         } else if (!m_autoCQWatchdogPending) {
           m_autoCQWatchdogPending = true;
         }
       } else {
-        tx_watchdog (true);       // disable transmit
+        if (m_bTxTime) {
+          m_watchdogPendingDisable = true;
+        } else {
+          tx_watchdog (true);       // disable transmit
+        }
       }
     }
 
@@ -12024,6 +12037,7 @@ void MainWindow::tx_watchdog (bool triggered)
 {
   auto prior = m_tx_watchdog;
   m_tx_watchdog = triggered;
+  m_watchdogPendingDisable = false;
   if (triggered)
     {
       if (m_zdebug) log("TXWatchdog: TRUE");
@@ -12099,6 +12113,7 @@ void MainWindow::reset_watchdog_on_click ()
     return;
   }
 
+  m_watchdogPendingDisable = false;
   if (m_tx_watchdog) {
     tx_watchdog (false);
     return;
@@ -12107,12 +12122,12 @@ void MainWindow::reset_watchdog_on_click ()
   if (m_bTxTime) {
     auto const now = QDateTime::currentDateTimeUtc ();
     qint64 const ms = now.toMSecsSinceEpoch () % 86400000;
-    double const tsec = 0.001 * ms;
-    int const elapsed_seconds = int (fmod (tsec, m_TRperiod));
+    double const elapsed_msecs = fmod (double (ms), 1000.0 * m_TRperiod);
+    int const elapsed_ms = int (qRound (elapsed_msecs));
 
     m_autoCQWatchdogPending = false;
-    m_watchdogAnchorUtc = now.addSecs (-elapsed_seconds);
-    m_idleMinutes = qMin (watchdog (), elapsed_seconds / 60.0);
+    m_watchdogAnchorUtc = now.addMSecs (-elapsed_ms);
+    m_idleMinutes = qMin (watchdog (), elapsed_ms / 60000.0);
     update_watchdog_label ();
     return;
   }
