@@ -15162,7 +15162,8 @@ void MainWindow::toggleBands() {
 
   Mode mode;
   if (m_mode == "FT8") mode = Mode::FT8;
-  else if ((m_mode=="FT4" or m_mode=="FT2")) mode = Mode::FT4;
+  else if ((m_mode=="FT4" )) mode = Mode::FT4;
+  else if ((m_mode=="FT2" )) mode = Mode::FT2;
   else return;
 
   // Pick the next different band in this schedule row that is available
