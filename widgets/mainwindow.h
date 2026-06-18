@@ -379,6 +379,8 @@ private slots:
     bool isSlotFree(int f);
     void addSlot(int freq);
     void on_pb_FreeFreq_clicked();
+    void on_pb_ModeChangeNow_clicked();
+    void on_pb_BandChangeNow_clicked();
      void on_cbAutoCall_toggled(bool b);
      void on_cbAutoCQ_toggled(bool b);
      bool callsignFiltered(DecodedText dt);
