@@ -4447,6 +4447,26 @@ list. The list can be maintained in Settings (F2).</string>
              </widget>
             </item>
             <item>
+            <widget class="QPushButton" name="pb_ModeChangeNow">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Immediately switch from Auto CQ to AutoCall.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Mode Now</string>
+              </property>
+              </widget>
+              </item>
+              <item>
+              <widget class="QPushButton" name="pb_BandChangeNow">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Immediately switch bands if enabled&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Band Now</string>
+               </property>
+                </widget>
+              </item>
+              <item>
              <spacer name="horizontalSpacer_4">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
