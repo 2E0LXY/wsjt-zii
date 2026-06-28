@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
 
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,9 +30,8 @@ jobs:
             libboost-log-dev libboost-thread-dev \
             libhamlib-dev libhamlib-utils \
             libusb-1.0-0-dev libudev-dev \
-            libportaudio-dev portaudio19-dev \
-            asciidoctor libxml2-utils \
-            nsis dpkg-dev
+            portaudio19-dev \
+            dpkg-dev
 
       - name: Configure (CMake)
         run: |
@@ -59,19 +61,8 @@ jobs:
           path: build/*.deb
           retention-days: 30
 
-      - name: Create GitHub Release and upload .deb
+      - name: Attach .deb to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: build/*.deb
-          generate_release_notes: true
-          body: |
-            WSJT-Z ${{ github.ref_name }} — Linux Debian package
-
-            Built on Ubuntu 22.04 (amd64). Compatible with Debian 12+ and Ubuntu 22.04+.
-
-            Install:
-            ```
-            sudo dpkg -i wsjt-z_*.deb
-            sudo apt-get install -f   # fix any missing deps
-            ```
