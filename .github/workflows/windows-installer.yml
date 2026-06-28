@@ -52,7 +52,8 @@ jobs:
             --prefix=/mingw64 \
             --disable-static \
             --without-cxx-binding \
-            --disable-winradio
+            --disable-winradio \
+            --disable-readline
           make -j$(nproc)
           make install
 
