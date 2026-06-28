@@ -65,6 +65,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=/mingw64 \
             -DWSJT_SKIP_MANPAGES=ON \
             -DWSJT_GENERATE_DOCS=OFF \
+            -DWSJT_WITH_OMNIRIG=OFF \
             ..
 
       - name: Build
