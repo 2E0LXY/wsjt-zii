@@ -39,7 +39,7 @@ project (wsjtx
   VERSION ${WSJTX_VERSION_MAJOR}.${WSJTX_VERSION_MINOR}.${WSJTX_VERSION_PATCH}.0
   LANGUAGES C CXX Fortran
   )
-set (PROJECT_DESCRIPTION "WSJT-Z: a WSJT-X fork")
+set (PROJECT_DESCRIPTION "WSJT-Zii: independent fork of WSJT-Z by 2E0LXY")
 set (CMAKE_PROJECT_DESCRIPTION ${PROJECT_DESCRIPTION})
 
 # Optional OmniRig CAT-control support (Windows only, requires OmniRig installed).
@@ -74,7 +74,7 @@ set (PROJECT_BUNDLE_NAME "WSJT-Z")
 set (PROJECT_VENDOR "2E0LXY")
 set (PROJECT_CONTACT "2E0LXY")
 set (PROJECT_COPYRIGHT "Copyright (C) 2001-2026 by SQ9FVE")
-set (PROJECT_HOMEPAGE https://github.com/2E0LXY/wsjt-z)
+set (PROJECT_HOMEPAGE https://github.com/2E0LXY/wsjt-zii)
 set (PROJECT_MANUAL wsjtx-main)
 set (PROJECT_MANUAL_DIRECTORY_URL https://groups.io/g/WSJT-Z)
 set (PROJECT_SAMPLES_URL https://sourceforge.net/projects/wsjt/files/)
