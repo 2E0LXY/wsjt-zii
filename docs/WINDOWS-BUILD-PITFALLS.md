@@ -117,6 +117,44 @@ pacman -U --noconfirm --nodeps \
 
 ---
 
+## Pitfall 5b — Runtime DLL mismatch: `__emutls_v_ZSt11__once_call` entry point not found
+
+**Symptom:** After installing, `wsjtx.exe` immediately crashes with:
+```
+wsjtx.exe — Entry Point Not Found
+The procedure entry point __emutls_v_ZSt11__once_call could not be located
+in the dynamic link library C:\WSJT\wsjtx\bin\wsjtx.exe
+```
+
+**Root cause:** The original Pitfall 5 fix only downgraded the compiler
+binaries (`gcc`, `gcc-fortran`) to 14.2.0-3, but left `gcc-libs` at
+the current GCC 15.x version. `gcc-libs` provides the runtime DLLs
+(`libstdc++-6.dll`, `libgcc_s_seh-1.dll`, `libgfortran-5.dll`,
+`libgomp-1.dll`) that are bundled into the NSIS installer.
+
+The result: `wsjtx.exe` was compiled with GCC 14 and references the GCC 14
+ABI symbol `__emutls_v_ZSt11__once_call`, but the installer shipped the GCC
+15 `libstdc++-6.dll` which no longer exports that symbol under the same name.
+
+**Fix:** Downgrade `gcc-libs` **in the same pacman command** as `gcc` and
+`gcc-fortran`:
+
+```bash
+BASE=https://repo.msys2.org/mingw/mingw64
+pacman -U --noconfirm --nodeps \
+  "${BASE}/mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
+  "${BASE}/mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
+  "${BASE}/mingw-w64-x86_64-gcc-fortran-14.2.0-3-any.pkg.tar.zst"
+```
+
+`gcc-libs` contains `libgfortran-5.dll` and `libgomp-1.dll` as well — one
+package covers all GCC runtime DLLs.
+
+**Rule:** All four GCC components must always be pinned together:
+`gcc-libs`, `gcc`, `gcc-fortran`, and — if used — `gcc-ada`, `gcc-objc`.
+
+---
+
 ## Pitfall 6 — `NFFT` undeclared in `map65/libm65/decode0.f90`
 
 **Symptom:**
@@ -191,7 +229,8 @@ Copy this into the PR description for any new WSJT-X/Z Windows CI setup:
 Windows MSYS2 build checklist:
 [ ] Hamlib NOT in pacman — build 4.5.5 from tarball with autotools
 [ ] mingw-w64-x86_64-readline installed BEFORE Hamlib configure
-[ ] gcc + gcc-fortran pinned to 14.2.0-3 via pacman -U --nodeps
+[ ] gcc-libs + gcc + gcc-fortran ALL pinned to 14.2.0-3 via pacman -U --nodeps
+    (pinning only gcc/gcc-fortran causes runtime DLL mismatch on install)
 [ ] -DWSJT_WITH_OMNIRIG=OFF passed to CMake
 [ ] WSJT_NO_OMNIRIG guards all 3 OmniRig blocks in TransceiverFactory.cpp
 [ ] parameter (NFFT=32768) declared in map65/libm65/decode0.f90
