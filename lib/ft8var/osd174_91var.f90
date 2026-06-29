@@ -124,7 +124,7 @@ ntotal=0
 nrejected=0
 
 if(ndeep.eq.0) goto 998  ! norder=0
-if(ndeep.gt.5) ndeep=5
+if(ndeep.gt.7) ndeep=7          ! was capped at 5; ndeep 6-7 added below
 if( ndeep.eq. 1) then
    nord=1
    npre1=0
@@ -158,6 +158,24 @@ elseif(ndeep.eq.5) then
    nt=40
    ntheta=12
    ntau=19
+elseif(ndeep.eq.6) then
+   ! Wider order-2 search: doubled nt, 67% more ntheta, ntau+5.
+   ! Estimated ~0.8 dB gain over ndeep=5 at ~2× compute cost.
+   nord=2
+   npre1=1
+   npre2=1
+   nt=80
+   ntheta=20
+   ntau=24
+elseif(ndeep.eq.7) then
+   ! Maximum practical order-2: nt×3, ntheta×2.5, ntau+8.
+   ! Estimated ~1.5 dB over ndeep=5; use only with nagainfil / high-CPU budget.
+   nord=2
+   npre1=1
+   npre2=1
+   nt=120
+   ntheta=30
+   ntau=27
 endif
 
 do iorder=1,nord

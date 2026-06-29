@@ -125,7 +125,7 @@ ntotal=0
 nrejected=0
 
 if(ndeep.eq.0) goto 998  ! norder=0
-if(ndeep.gt.5) ndeep=5
+if(ndeep.gt.7) ndeep=7
 if( ndeep.eq. 1) then
    nord=1
    npre1=0
@@ -159,6 +159,20 @@ elseif(ndeep.eq.5) then
    nt=40
    ntheta=12
    ntau=19
+elseif(ndeep.eq.6) then
+   nord=2
+   npre1=1
+   npre2=1
+   nt=80
+   ntheta=20
+   ntau=24
+elseif(ndeep.eq.7) then
+   nord=2
+   npre1=1
+   npre2=1
+   nt=120
+   ntheta=30
+   ntau=27
 endif
 
 do iorder=1,nord

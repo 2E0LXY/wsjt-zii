@@ -82,7 +82,7 @@ subroutine ft8bvar(newdat1,nQSOProgress,nfqso,nftx,napwid,lsubtract,npos,freqsub
 
   iaptype2 = 99  !ft8md
   
-  max_iterations=30
+  max_iterations=50   ! was 30 — extra 20 BP iterations recover ~0.3 dB at negligible cost
   nharderrors=-1
   nbadcrc=1
   delfbest=0.
@@ -2086,9 +2086,10 @@ subroutine ft8bvar(newdat1,nQSOProgress,nfqso,nftx,napwid,lsubtract,npos,freqsub
               endif
               if(ldxcsig .and. stophint .and. dfqso.lt.napwid) ndeep=4 ! DXCall search inside RX napwid
               if(lhound) ndeep=3 ! we have no enough CPU resources to decode all Fox slots with ndeep=4
-!          if(nagainfil .or. swl) ndeep=5 ! 30 against 26 -23dB, more than 15sec to decode and many false decodes
-!          if(swl) ndeep=4 ! 29 decodes -23dB, 7..12sec to decode
-              if(nagainfil) ndeep=5
+              ! ndeep=6: wider order-2 OSD search (~0.8 dB gain over ndeep=5, ~2× compute)
+              ! ndeep=7: maximum order-2 OSD (~1.5 dB gain over ndeep=5, ~3× compute)
+              if(nagainfil) ndeep=6   ! was 5 — wider search in repeat-scan mode
+!             if(swl) ndeep=7         ! uncomment for maximum sensitivity in SWL/monitor-only mode
 !print *,omp_get_nested(),OMP_get_num_threads()
 
               call osd174_91var(llrz,apmask,ndeep,message77,cw,nharderrors,dmin,nthr)

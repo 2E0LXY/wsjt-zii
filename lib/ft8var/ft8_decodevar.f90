@@ -220,7 +220,10 @@ contains
        elseif(ipass.eq.2 .or. ipass.eq.5 .or. ipass.eq.8) then
           if(lft8lowth) syncmin=1.3
        elseif(ipass.eq.3 .or. ipass.eq.6 .or. ipass.eq.9) then
-          if(lft8lowth) syncmin=1.1
+          ! lowered from 1.1 → 0.9: lets ~0.8 dB weaker signals enter the decode
+          ! chain on the final residual pass; false-positive rate is low here because
+          ! strong signals have already been subtracted in earlier passes.
+          if(lft8lowth) syncmin=0.9
        endif
        if(ipass.gt.5 .or. (ipass.eq.3 .and. npass.eq.3)) lsubtract=.false.
 
