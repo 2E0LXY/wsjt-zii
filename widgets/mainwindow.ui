@@ -3522,7 +3522,7 @@ list. The list can be maintained in Settings (F2).</string>
                          <item>
                           <widget class="QLineEdit" name="le_CustomAlerts">
                            <property name="toolTip">
-                            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You can use this text area to define custom criteria for your alerts. &lt;/p&gt;&lt;p&gt;Comma separated strings entered here will be matched against the stations calling CQ.&lt;/p&gt;&lt;p&gt;These could be prefixes, suffixes or whole call signs.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Example: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;SP,SQ,HF,SQ9FVE,FVE&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;You can use this text area to define custom criteria for your alerts. &lt;/p&gt;&lt;p&gt;Comma separated strings entered here will be matched against the stations calling CQ.&lt;/p&gt;&lt;p&gt;These could be prefixes, suffixes or whole call signs.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Example: &lt;/span&gt;&lt;/p&gt;&lt;p&gt;SP,SQ,HF,2E0LXY,LXY&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                            </property>
                           </widget>
                          </item>
@@ -5531,7 +5531,7 @@ list. The list can be maintained in Settings (F2).</string>
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>WSJT-Z Debug </string>
+    <string>WSJT-Zii Debug </string>
    </property>
   </action>
   <action name="actionFST4">
@@ -5569,7 +5569,7 @@ list. The list can be maintained in Settings (F2).</string>
   </action>
   <action name="actionAbout_WSJT_Z">
    <property name="text">
-    <string>About WSJT-Z</string>
+    <string>About WSJT-Zii</string>
    </property>
   </action>
   <action name="actionDark_mode">

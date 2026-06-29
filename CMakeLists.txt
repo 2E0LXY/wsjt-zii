@@ -70,13 +70,13 @@ set (wsjtx_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_
 # project information
 #
 ## // Z
-set (PROJECT_BUNDLE_NAME "WSJT-Z")
+set (PROJECT_BUNDLE_NAME "WSJT-Zii")
 set (PROJECT_VENDOR "2E0LXY")
 set (PROJECT_CONTACT "2E0LXY")
-set (PROJECT_COPYRIGHT "Copyright (C) 2001-2026 by SQ9FVE")
+set (PROJECT_COPYRIGHT "Copyright (C) 2001-2026 by K1JT et al. Fork (C) 2026 by 2E0LXY")
 set (PROJECT_HOMEPAGE https://github.com/2E0LXY/wsjt-zii)
 set (PROJECT_MANUAL wsjtx-main)
-set (PROJECT_MANUAL_DIRECTORY_URL https://groups.io/g/WSJT-Z)
+set (PROJECT_MANUAL_DIRECTORY_URL https://github.com/2E0LXY/wsjt-zii)
 set (PROJECT_SAMPLES_URL https://sourceforge.net/projects/wsjt/files/)
 #set (PROJECT_SAMPLES_UPLOAD_DEST frs.sourceforge.net:/home/frs/project/wsjt/)
 # WSJT-Z mod version suffix shown in UI and package metadata.

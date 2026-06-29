@@ -507,7 +507,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         m_config.udp_server_name (), m_config.udp_server_port (),
         m_config.udp_interface_names (), m_config.udp_TTL (),
         this}},
-  m_psk_Reporter {&m_config, QString {"WSJT-X v" + version () + " " + m_revision}.simplified ()},
+  m_psk_Reporter {&m_config, QString {"WSJT-Zii v" + version () + " " + m_revision}.simplified ()},
   m_manual {&m_network_manager},
   m_block_udp_status_updates {false}
 {
@@ -852,7 +852,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
       if (m_pskReporterView) m_pskReporterView->setFont(font);
     });
 
-  setWindowTitle (program_title () + " (WSJT-Z MOD by SQ9FVE " + QStringLiteral (VERSION_Z) + ")");
+  setWindowTitle (program_title () + " (WSJT-Zii by 2E0LXY v" + QStringLiteral (VERSION_Z) + ")");
 
 
   connect(&proc_jt9, &QProcess::readyReadStandardOutput, this, &MainWindow::readFromStdout);
@@ -4124,7 +4124,7 @@ void MainWindow::on_actionActiveStations_triggered()
 void MainWindow::update_tx5(const QString &qsy_text)
 {
   if (m_hisCall == "") {
-    MessageBox::warning_message(this, "WSJT-Z",
+    MessageBox::warning_message(this, "WSJT-Zii",
                                 "There must be a callsign in the\n DX Call Box to send QSY Request");
   } else {
     QString text = qsy_text;
@@ -15228,10 +15228,11 @@ void MainWindow::switchBand(int row) {
 void MainWindow::ZMessage ()
 {
 
-    QString message = "Please visit our <a href='https://groups.io/g/WSJT-Z/topics'>groups.io</a> forum if you need help with Z! <br /><br />"
-                        "Latest versions can be downloaded from <a href='https://sourceforge.net/projects/wsjt-z/'>sourceforge</a> <br /><br />"
-                        "<a href='https://sourceforge.net/projects/wsjt-z/files/Documentation/WSJT-Z%20User%20Manual.pdf/download'>WSJT-Z Documentation</a> <br /><br /><br /><br />"
-                        "<b>Donate to WSJT-Z charity event <a href='https://groups.io/g/WSJT-Z/topic/wsjt_z_charity_event_radio/86127241'>HERE</a></b> <br /><br />";
+    QString message = "WSJT-Zii v" + QStringLiteral (VERSION_Z) + " — independent fork by 2E0LXY<br /><br />"
+                        "Source &amp; releases: <a href='https://github.com/2E0LXY/wsjt-zii'>github.com/2E0LXY/wsjt-zii</a><br /><br />"
+                        "Based on <a href='https://github.com/sq9fve/wsjt-z'>WSJT-Z by SQ9FVE</a>, itself based on "
+                        "<a href='https://wsjt.sourceforge.io/'>WSJT-X</a> by K1JT et al.<br /><br />"
+                        "Bug reports: <a href='https://github.com/2E0LXY/wsjt-zii/issues'>github.com/2E0LXY/wsjt-zii/issues</a>";
 
     MessageBox::information_message(this, message);
 }
