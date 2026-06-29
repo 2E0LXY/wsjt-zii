@@ -149,13 +149,31 @@ curl -sL "${BASE}/mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
       mingw64/bin/libatomic-1.dll
 ```
 
-`fixup_bundle` (from `bundle_fixup/CMakeLists.txt`) searches `/mingw64/bin/` during `cmake --install` to collect DLLs for the NSIS installer. After this step, it will pick up GCC 14's `libstdc++-6.dll` instead of GCC 15's, eliminating the ABI mismatch.
+**WARNING — do NOT use `tar --overwrite` to `/mingw64/bin/`.**
+This breaks cmake, ninja, and every other tool compiled against the current GCC, because they immediately fail to load with exit code 127 (their `libstdc++-6.dll` no longer exports the GCC 16 symbols they need).
 
-**`libgfortran-5.dll`** is not in `gcc-libs` — it comes from `cc-libs` (GCC 15). If the Fortran runtime DLL mismatch becomes an issue, add `-static-libgfortran` to `CMAKE_EXE_LINKER_FLAGS` in CMakeLists.txt for WIN32 builds.
+**Final working approach — isolated DLL directory:**
 
-**Rule:** All four GCC components must be handled together — but via different mechanisms:
-- `gcc` + `gcc-fortran`: `pacman -U --nodeps` (safe, no reverse deps)
-- `gcc-libs` DLLs: direct tar overwrite of `/mingw64/bin/` (bypasses cc-libs conflict)
+1. Extract the GCC 14 DLLs to a separate directory (`/tmp/gcc14dlls/`):
+```bash
+BASE=https://repo.msys2.org/mingw/mingw64
+mkdir -p /tmp/gcc14dlls
+curl -sL "${BASE}/mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
+  | zstd -dc | tar -x --strip-components=2 -C /tmp/gcc14dlls \
+      mingw64/bin/libstdc++-6.dll \
+      mingw64/bin/libgcc_s_seh-1.dll \
+      mingw64/bin/libgomp-1.dll \
+      mingw64/bin/libquadmath-0.dll \
+      mingw64/bin/libatomic-1.dll
+```
+
+2. Pass the directory to CMake: `-DGCC_RUNTIME_OVERRIDE_DIR=/tmp/gcc14dlls`
+
+3. `bundle_fixup/CMakeLists.txt` prepends `GCC_RUNTIME_OVERRIDE_DIR` to `fixup_library_dirs` before the Qt/system directory, so `fixup_bundle` finds and bundles the GCC 14 DLLs first. Build tools still use GCC 16 from `/mingw64/bin/` — unaffected.
+
+**Rule:**
+- `gcc` + `gcc-fortran`: `pacman -U --nodeps` (safe — no reverse deps)
+- `gcc-libs` DLLs: isolated directory + `GCC_RUNTIME_OVERRIDE_DIR` CMake flag
 
 ---
 
