@@ -283,6 +283,94 @@ The threads library is now linked on all platforms when the `threads` component 
 
 ---
 
+
+
+---
+
+## Pitfall 9 — OmniRig CAT control: re-enabling correctly (not just disabling it)
+
+`WSJT_WITH_OMNIRIG=OFF` is the safe fallback (Pitfalls 3/4) but loses
+OmniRig as a selectable rig in the CAT dropdown. To enable it correctly:
+
+**Three separate problems, not one:**
+
+1. **`Qt5AxContainer` package name.** It DOES exist for MinGW64 in MSYS2 —
+   `mingw-w64-x86_64-qt5-activeqt`. A naive `grep` for "activeqt" against
+   the raw repo listing can miss it if the match pattern is wrong; verify
+   directly against `packages.msys2.org` or by downloading the `.zst` and
+   listing its contents.
+
+2. **`dumpcpp` binary name.** The package installs `dumpcpp-qt5.exe`, not
+   `dumpcpp.exe`. Both `CMakeLists.txt` (`find_program (DUMPCPP dumpcpp)`)
+   and `CMake/Modules/QtAxMacros.cmake`
+   (`find_program (DUMPCPP_Executable dumpcpp.exe)`) hardcode the plain
+   name. Fix: `cp /mingw64/bin/dumpcpp-qt5.exe /mingw64/bin/dumpcpp.exe`
+   in the CI workflow before configuring.
+
+3. **CLSID registry lookup and the WOW64 split.** The original code does
+   `dumpcpp -getfile {4FE359C5-A58F-459D-BE95-CA559FB4F270}`, which
+   requires OmniRig installed AND registered on the build machine.
+   OmniRig is a 32-bit Delphi COM server. Our toolchain is 64-bit MinGW.
+   A 64-bit process querying `HKEY_CLASSES_ROOT\CLSID\{...}` reads the
+   *native 64-bit registry view*, not the `WOW6432Node` view where a
+   32-bit COM server's self-registration normally lands. Installing
+   OmniRig on the runner does not guarantee the lookup succeeds.
+
+   **Fix: bypass the registry lookup entirely.** OmniRig's type library
+   is checked directly into its GitHub source repo
+   (`VE3NEA/OmniRig/OmniRig.tlb`). `dumpcpp` accepts a direct file path
+   as an alternative to `-getfile {CLSID}` — both produce the same
+   wrapper output. Added an `OMNIRIG_TLB_PATH` CMake override:
+
+   ```cmake
+   if (OMNIRIG_TLB_PATH)
+     file (TO_CMAKE_PATH ${OMNIRIG_TLB_PATH} AXSERVERSRCS)
+   else ()
+     # original registry-based lookup, unchanged, for local dev builds
+   endif ()
+   ```
+
+   CI step:
+   ```bash
+   curl -sL -o OmniRig.tlb \
+     https://raw.githubusercontent.com/VE3NEA/OmniRig/master/OmniRig.tlb
+   ```
+   ```bash
+   cmake ... -DOMNIRIG_TLB_PATH="$(cd .. && pwd)/OmniRig.tlb" ...
+   ```
+
+   This also avoids running a third-party installer in CI at all —
+   no virus-scan-flagged `.exe`, no install state to manage.
+
+4. **Narrowing conversion in `OmniRigTransceiver.cpp`.** Once the build
+   gets far enough to compile this file, GCC 14 may reject:
+   ```cpp
+   switch (rig_->GetRxFrequency () - test_frequency)
+     {
+     case -5: ...
+   ```
+   with `narrowing conversion of '-5' from 'int' to 'long long unsigned int'`.
+   This happens because `dumpcpp`'s generated wrapper for
+   `GetRxFrequency()` is typed as returning an unsigned 64-bit value (the
+   exact type depends on how dumpcpp interprets the IDL property type in
+   the `.tlb`, which can differ from what the original WSJT-X authors saw
+   on their MSVC + official-Qt-builds toolchain). Fix: cast the switch
+   expression to a signed type, which is always safe for radio
+   frequencies (comfortably within `qint64` range) and changes no
+   behaviour:
+   ```cpp
+   switch (static_cast<qint64> (rig_->GetRxFrequency () - test_frequency))
+   ```
+
+**End-user requirement:** the compiled application can now offer OmniRig
+as a CAT control option, but end users who want to actually *use* it must
+separately install OmniRig themselves (`http://www.dxatlas.com/OmniRig/`)
+— same as for any other WSJT-X/Z-family fork. We do not bundle OmniRig in
+the installer; only its build-time type library is needed to compile the
+wrapper code.
+
+---
+
 ## Quick-reference checklist for future forks
 
 Copy this into the PR description for any new WSJT-X/Z Windows CI setup:
