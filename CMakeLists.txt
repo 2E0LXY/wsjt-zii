@@ -915,22 +915,36 @@ set_property (SOURCE ${all_C_and_CXXSRCS} APPEND_STRING PROPERTY COMPILE_FLAGS "
 set_property (SOURCE ${all_C_and_CXXSRCS} APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/wsjtx_config.h)
 
 if (WIN32 AND WSJT_WITH_OMNIRIG)
-  # generate the OmniRig COM interface source
-  find_program (DUMPCPP dumpcpp)
-  if (DUMPCPP-NOTFOUND)
-    message (FATAL_ERROR "dumpcpp tool not found")
-  endif (DUMPCPP-NOTFOUND)
-  execute_process (
-    COMMAND ${DUMPCPP} -getfile {4FE359C5-A58F-459D-BE95-CA559FB4F270}
-    OUTPUT_VARIABLE AXSERVER
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  string (STRIP "${AXSERVER}" AXSERVER)
-  if (NOT AXSERVER)
-    message (FATAL_ERROR "You need to install OmniRig on this computer")
-  endif (NOT AXSERVER)
-  string (REPLACE "\"" "" AXSERVER ${AXSERVER})
-  file (TO_CMAKE_PATH ${AXSERVER} AXSERVERSRCS)
+  if (OMNIRIG_TLB_PATH)
+    # CI / reproducible-build path: skip the COM registry CLSID lookup
+    # entirely and use a directly-supplied copy of OmniRig.tlb instead.
+    # This avoids a WOW64 registry-view mismatch: OmniRig is a 32-bit
+    # Delphi COM server, so a 64-bit dumpcpp querying HKCR\CLSID\{...}
+    # would read the native 64-bit view, not the WOW6432Node view where
+    # a 32-bit self-registration normally lands.
+    if (NOT EXISTS "${OMNIRIG_TLB_PATH}")
+      message (FATAL_ERROR "OMNIRIG_TLB_PATH does not exist: ${OMNIRIG_TLB_PATH}")
+    endif (NOT EXISTS "${OMNIRIG_TLB_PATH}")
+    file (TO_CMAKE_PATH ${OMNIRIG_TLB_PATH} AXSERVERSRCS)
+  else (OMNIRIG_TLB_PATH)
+    # generate the OmniRig COM interface source via registry lookup
+    # (requires OmniRig installed and registered on this build machine)
+    find_program (DUMPCPP dumpcpp)
+    if (DUMPCPP-NOTFOUND)
+      message (FATAL_ERROR "dumpcpp tool not found")
+    endif (DUMPCPP-NOTFOUND)
+    execute_process (
+      COMMAND ${DUMPCPP} -getfile {4FE359C5-A58F-459D-BE95-CA559FB4F270}
+      OUTPUT_VARIABLE AXSERVER
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+    string (STRIP "${AXSERVER}" AXSERVER)
+    if (NOT AXSERVER)
+      message (FATAL_ERROR "You need to install OmniRig on this computer")
+    endif (NOT AXSERVER)
+    string (REPLACE "\"" "" AXSERVER ${AXSERVER})
+    file (TO_CMAKE_PATH ${AXSERVER} AXSERVERSRCS)
+  endif (OMNIRIG_TLB_PATH)
 endif (WIN32 AND WSJT_WITH_OMNIRIG)
 
 
