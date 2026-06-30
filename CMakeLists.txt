@@ -645,6 +645,7 @@ set (wsjt_FSRCS
   lib/ft8var/agccft8.f90
   lib/ft8var/baddatavar.f90
   lib/ft8var/bpdecode174_91var.f90
+  lib/ft8var/bpdecode174_91var_nms.f90
   lib/ft8var/chkfalse8var.f90
   lib/ft8var/chkflscallvar.f90
   lib/ft8var/chkgridvar.f90
