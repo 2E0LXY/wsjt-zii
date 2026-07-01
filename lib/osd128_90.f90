@@ -111,7 +111,7 @@ subroutine osd128_90(llr,apmask,ndeep,message77,cw,nhardmin,dmin)
   nrejected=0
 
   if(ndeep.eq.0) goto 998  ! norder=0
-  if(ndeep.gt.5) ndeep=5
+  if(ndeep.gt.6) ndeep=6  ! was 5; ndeep=6 (order-2 OSD) added below
   if( ndeep.eq. 1) then
      nord=1
      npre1=0
@@ -144,6 +144,13 @@ subroutine osd128_90(llr,apmask,ndeep,message77,cw,nhardmin,dmin)
      nt=12
      ntheta=4
      ntau=5
+  else                  !ndeep=6: order-2 OSD; K=90 → C(90,2)=4005 candidates, very cheap
+     nord=2
+     npre1=1
+     npre2=1
+     nt=20
+     ntheta=6
+     ntau=8
   endif
 
   do iorder=1,nord

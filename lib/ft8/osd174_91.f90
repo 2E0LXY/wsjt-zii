@@ -132,7 +132,7 @@ subroutine osd174_91(llr,k,apmask,ndeep,message91,cw,nhardmin,dmin)
    npre2=0
 
    if(ndeep.eq.0) goto 998  ! norder=0
-   if(ndeep.gt.6) ndeep=6
+   if(ndeep.gt.7) ndeep=7  ! was 6; ndeep=7 branch added below
    if( ndeep.eq. 1) then
       nord=1
       npre1=0
@@ -167,13 +167,20 @@ subroutine osd174_91(llr,k,apmask,ndeep,message91,cw,nhardmin,dmin)
       nt=40
       ntheta=12
       ntau=15
-   else                     !ndeep=6
-      nord=4
+   elseif(ndeep.eq.6) then
+      nord=4                !ndeep=6: matches ft8var/osd174_91var.f90 tier
       npre1=1
       npre2=1
       nt=95
       ntheta=12
       ntau=15
+   else                     !ndeep=7: order-5 OSD; mirrors ft8var ndeep=7 (nt=120,ntheta=30,ntau=27)
+      nord=5
+      npre1=1
+      npre2=1
+      nt=120
+      ntheta=30
+      ntau=27
    endif
 
    do iorder=1,nord

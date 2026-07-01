@@ -27,7 +27,7 @@ subroutine decode174_91(llr,Keff,maxosd,norder,apmask,message91,cw,ntype,nharder
    maxiterations=50  ! was 30 — matches the FT8 fix; this shared (174,91)
                       ! base decoder is used by FT4 via decode174_91
    nosd=0
-   if(maxosd.gt.3) maxosd=3
+   if(maxosd.gt.4) maxosd=4  ! was 3; allows one extra OSD pass with deeper ndeep
    if(maxosd.eq.0) then ! osd with channel llrs
       nosd=1
       zsave(:,1)=llr

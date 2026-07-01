@@ -28,7 +28,7 @@ subroutine decode240_74(llr,Keff,maxosd,norder,apmask,message74,cw,ntype,nharder
    if(Keff.eq.50) maxiterations=1  ! fast AP scan path — keep 1 iteration (unchanged)
 
    nosd=0
-   if(maxosd.gt.3) maxosd=3
+   if(maxosd.gt.4) maxosd=4  ! was 3; osd240_74.f90 already supports ndeep=6
    if(maxosd.eq.0) then ! osd with channel llrs
       nosd=1
       zsave(:,1)=llr

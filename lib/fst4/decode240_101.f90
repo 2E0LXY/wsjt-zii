@@ -26,7 +26,7 @@ subroutine decode240_101(llr,Keff,maxosd,norder,apmask,message101,cw,ntype,nhard
 
    maxiterations=50  ! was 30 — FST4 (240,101); same BP iteration reasoning as FT8/FT4
    nosd=0
-   if(maxosd.gt.3) maxosd=3
+   if(maxosd.gt.4) maxosd=4  ! was 3; osd240_101.f90 already supports ndeep=6
    if(maxosd.eq.0) then ! osd with channel llrs
       nosd=1
       zsave(:,1)=llr
