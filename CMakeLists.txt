@@ -80,7 +80,7 @@ set (PROJECT_MANUAL_DIRECTORY_URL https://github.com/2E0LXY/wsjt-y)
 set (PROJECT_SAMPLES_URL https://sourceforge.net/projects/wsjt/files/)
 #set (PROJECT_SAMPLES_UPLOAD_DEST frs.sourceforge.net:/home/frs/project/wsjt/)
 # WSJT-Z mod version suffix shown in UI and package metadata.
-set (VERSION_Z "2.0.16")
+set (VERSION_Z "3.1.0")
 message (STATUS "******************************************************")
 message (STATUS "Building ${PROJECT_BUNDLE_NAME} ${VERSION_Z} (base WSJT-X ${PROJECT_VERSION}) for ${CMAKE_SYSTEM_NAME}-${PROJECT_ARCHITECTURE}")
 message (STATUS "******************************************************")
@@ -1977,7 +1977,7 @@ set (CPACK_PACKAGE_NAME "wsjty")
 set (CPACK_PACKAGE_VERSION_Z "${VERSION_Z}")
 set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-set (CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}-${CPACK_PACKAGE_VERSION_Z}")
+set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
 
 
