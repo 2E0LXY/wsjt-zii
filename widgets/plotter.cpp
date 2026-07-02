@@ -679,30 +679,30 @@ void CPlotter::DrawOverlay()                   //DrawOverlay()
   }
     if(m_mode=="JT9" or m_mode=="JT65" or m_mode.mid(0,4)=="WSPR" or m_mode=="Q65"
       or m_mode=="FT8" or m_mode=="FT4" or m_mode=="FT2" or m_mode.startsWith("FST4")) {
-    painter0.setPen(penRed);
+    painter.setPen(penRed);   // Bug fix: was painter0 (→ScalePixmap); must be painter (→OverlayPixmap/2D scope)
     x1=XfromFreq(m_txFreq);
     x2=XfromFreq(m_txFreq+bw);
     if(m_bSuperFox) x2=XfromFreq(m_txFreq+1500.0);
     if(m_mode=="WSPR") {
-      bw=4*12000.0/8192.0;                  //WSPR
+      bw=4*12000.0/8192.0;
       x1=XfromFreq(m_txFreq-0.5*bw);
       x2=XfromFreq(m_txFreq+0.5*bw);
     }
-    // Draw the red goal post
-    painter0.drawLine(x1,yTxTop,x1,yTxTop+yh);
-    painter0.drawLine(x1,yTxTop,x2,yTxTop);
-    painter0.drawLine(x2,yTxTop,x2,yTxTop+yh);
+    // Draw the red goal post on the 2D scope (OverlayPixmap)
+    painter.drawLine(x1,yTxTop,x1,yTxTop+yh);
+    painter.drawLine(x1,yTxTop,x2,yTxTop);
+    painter.drawLine(x2,yTxTop,x2,yTxTop+yh);
   }
 
   QPainter hoverPainter(&m_HoverOverlayPixmap);
-  if (m_bars) {
-    if (!hoverPainter.isActive()) hoverPainter.begin(this);
-    int fwidth=XfromFreq(m_rxFreq+bw)-XfromFreq(m_rxFreq);;
+  if (m_bars && hoverPainter.isActive()) {
+    int fwidth=XfromFreq(m_rxFreq+bw)-XfromFreq(m_rxFreq);
     hoverPainter.setCompositionMode(QPainter::CompositionMode_Source);
     hoverPainter.fillRect(0, 0, m_Size.width(), m_h, Qt::transparent);
-    hoverPainter.setPen(QPen(Qt::white));              // white bars
-    hoverPainter.drawLine(0, 30, 0, m_h);              // first slot, left line hover
-    hoverPainter.drawLine(fwidth, 30, fwidth, m_h);    // first slot, right line hover
+    hoverPainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    hoverPainter.setPen(QPen(Qt::white));
+    hoverPainter.drawLine(0, 30, 0, m_h);
+    hoverPainter.drawLine(fwidth, 30, fwidth, m_h);
   }
   
   if(m_dialFreq>10.13 and m_dialFreq< 10.15 and m_mode.mid(0,4)!="WSPR" and m_mode!="FST4W") {

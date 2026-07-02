@@ -4997,7 +4997,9 @@ void MainWindow::decodeDone ()
     // All decodes for this period are in the cache — push to the waterfall overlay
     updateWaterfallCallsigns();
     m_decodesLabelCache.clear();  // ready for next period
-    if (m_dxMap) m_dxMap->clearStations();  // fresh station list each T/R period
+    // DX Map: don't clear every T/R period — accumulate stations so the map
+    // builds a useful picture. addStation() deduplicates by callsign.
+    // User double-clicks the map widget to manually clear.
   }
 
   if(m_mode=="Q65" and (m_specOp==SpecOp::NA_VHF or m_specOp==SpecOp::ARRL_DIGI
