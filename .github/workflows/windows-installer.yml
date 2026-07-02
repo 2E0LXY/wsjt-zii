@@ -114,17 +114,17 @@ jobs:
         run: |
           cd build
           cpack -G NSIS
-          ls -lh *.exe
+          ls -lh *-win64.exe
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wsjt-z-windows-installer
-          path: build/*.exe
+          name: wsjt-y-windows-installer
+          path: build/*-win64.exe
           retention-days: 30
 
       - name: Attach installer to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/*.exe
+          files: build/*-win64.exe
