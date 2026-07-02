@@ -206,140 +206,134 @@ void DXStationMap::drawInfoBar(QPainter &p) const
 void DXStationMap::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::Antialiasing, false);  // off for text clarity
 
     const int w = width(), h = height(), mapH = h - 14;
-    if (w < 10 || mapH < 10) return;
+    if (w < 20 || mapH < 20) return;
 
-    // Background gradient: deep navy, poles slightly darker
+    // ── Background gradient ──────────────────────────────────────────────────
     for (int y = 0; y < mapH; ++y) {
         const double t = double(y) / mapH;
-        const int r = 4 + int(t * (1-t) * 16);
-        const int g = 8 + int(t * (1-t) * 24);
-        const int b = 20 + int(t * (1-t) * 40);
-        p.fillRect(0, y, w, 1, QColor(r, g, b));
+        const double s = 4.0 * t * (1.0 - t);
+        p.fillRect(0, y, w, 1, QColor(int(3+s*14), int(7+s*20), int(18+s*38)));
     }
 
-    // Continent shading (very subtle fill for each 20°×10° field square)
-    // Uses a look-up of which fields are predominantly land vs ocean
-    static const char *landFields[] = {
-        // Europe / Asia band
-        "IA","IB","IC","ID","IE","IF","IG","IH","II","IJ","IK","IL","IM","IN","IO","IP","IQ","IR",
-        "JA","JB","JC","JD","JE","JF","JG","JH","JI","JJ","JK","JL","JM","JN","JO","JP","JQ","JR",
-        "KA","KB","KC","KD","KE","KF","KG","KH","KI","KJ","KK","KL","KM","KN","KO","KP",
-        "LA","LB","LC","LD","LE","LF","LG","LH","LI","LJ","LK","LL","LM","LN","LO","LP",
-        "MA","MB","MC","MD","ME","MF","MG","MH","MI","MJ","MK","ML","MM","MN","MO","MP",
-        "NA","NB","NC","ND","NE","NF","NG","NH","NI","NJ","NK","NL","NM","NN","NO","NP",
-        "OA","OB","OC","OD","OE","OF","OG","OH","OI","OJ","OK","OL","OM","ON","OO","OP",
-        "PA","PB","PC","PD","PE","PF","PG","PH","PI","PJ","PK","PL","PM","PN","PO","PP",
-        // Africa band
-        "HA","HB","HC","HD","HE","HF","HG","HH","HI","HJ","HK","HL","HM","HN","HO","HP",
-        "GA","GB","GC","GD","GE","GF","GG","GH","GI","GJ","GK","GL","GM","GN","GO","GP","GQ",
-        "FA","FB","FC","FD","FE","FF","FG","FH","FI","FJ","FK","FL","FM","FN","FO","FP","FQ","FR",
-        // Americas
-        "DM","DN","DO","DP","DQ","DR","DL","DK","DJ",
-        "EM","EN","EO","EP","EQ","ER","EL","EK","EJ","EH","EG","EF","EE","ED","EC","EB","EA",
-        "FM","FN","FO","FP","FQ","FR",
-        "GF","GG","GH","GI","GJ","GK",
-        // Australia
-        "QF","QG","QH","RF","RG",
-        nullptr
-    };
-    QSet<QString> landSet;
-    for (int i = 0; landFields[i]; ++i)
-        landSet.insert(QString(landFields[i]));
+    // ── Land-field lookup (built once) ───────────────────────────────────────
+    static const QSet<QString> landSet = []() -> QSet<QString> {
+        static const char *f[] = {
+            "IA","IB","IC","ID","IE","IF","IG","IH","II","IJ","IK","IL","IM","IN","IO","IP","IQ","IR",
+            "JA","JB","JC","JD","JE","JF","JG","JH","JI","JJ","JK","JL","JM","JN","JO","JP","JQ","JR",
+            "KA","KB","KC","KD","KE","KF","KG","KH","KI","KJ","KK","KL","KM","KN","KO","KP",
+            "LA","LB","LC","LD","LE","LF","LG","LH","LI","LJ","LK","LL","LM","LN","LO","LP",
+            "MA","MB","MC","MD","ME","MF","MG","MH","MI","MJ","MK","ML","MM","MN","MO","MP",
+            "NA","NB","NC","ND","NE","NF","NG","NH","NI","NJ","NK","NL","NM","NN","NO","NP",
+            "OA","OB","OC","OD","OE","OF","OG","OH","OI","OJ","OK","OL","OM","ON","OO","OP",
+            "PA","PB","PC","PD","PE","PF","PG","PH","PI","PJ","PK","PL","PM","PN","PO","PP",
+            "HA","HB","HC","HD","HE","HF","HG","HH","HI","HJ","HK","HL","HM","HN","HO","HP",
+            "GA","GB","GC","GD","GE","GF","GG","GH","GI","GJ","GK","GL","GM","GN","GO","GP","GQ",
+            "FA","FB","FC","FD","FE","FF","FG","FH","FI","FJ","FK","FL","FM","FN","FO","FP","FQ","FR",
+            "DM","DN","DO","DP","DQ","DR","DL","DK","DJ",
+            "EM","EN","EO","EP","EQ","ER","EL","EK","EJ","EH","EG","EF","EE","ED","EC","EB","EA",
+            "GF","GG","GH","GI","GJ","GK",
+            "QF","QG","QH","RF","RG",
+            nullptr
+        };
+        QSet<QString> s;
+        for (int i = 0; f[i]; ++i) s.insert(QString::fromLatin1(f[i]));
+        return s;
+    }();
 
-    // Draw field squares
+    // ── Cell size for font/dot scaling ───────────────────────────────────────
+    const int cellW = w / 18;
+    const int cellH = mapH / 18;
+
+    // ── Land shading ─────────────────────────────────────────────────────────
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(8, 22, 45, 100));
     for (int fi = 0; fi < 18; ++fi) {
         for (int li = 0; li < 18; ++li) {
-            QString code;
-            code.append(QChar('A'+fi));
-            code.append(QChar('A'+li));
+            QString code = QString("%1%2")
+                .arg(QChar('A'+fi)).arg(QChar('A'+li));
+            if (!landSet.contains(code)) continue;
             const double lon0 = fi*20.0-180.0, lat0 = li*10.0-90.0;
-            const QPointF tl = project(lon0, lat0+10.0);
-            const QPointF br = project(lon0+20.0, lat0);
-            const bool land = landSet.contains(code);
-            p.setPen(Qt::NoPen);
-            if (land)
-                p.setBrush(QColor(8, 22, 45, 120));   // subtle land tint
-            else
-                p.setBrush(Qt::NoBrush);
-            if (land) p.drawRect(QRectF(tl, br));
+            const QPointF tl = project(lon0,       lat0+10.0);
+            const QPointF br = project(lon0+20.0,  lat0);
+            p.drawRect(QRectF(tl, br).normalized());
         }
     }
 
-    // Grid lines — visible teal-blue
+    // ── Grid lines ───────────────────────────────────────────────────────────
     p.setBrush(Qt::NoBrush);
+    p.setPen(QPen(QColor(18, 55, 100, 200), 1));
     for (int i = 0; i <= 18; ++i) {
         const double lon = i*20.0-180.0;
-        p.setPen(QPen(QColor(18, 55, 100, 180), 1));
-        p.drawLine(project(lon, -90), project(lon, 90));
+        p.drawLine(project(lon,-90), project(lon,90));
     }
     for (int j = 0; j <= 18; ++j) {
         const double lat = j*10.0-90.0;
-        p.setPen(QPen(QColor(18, 55, 100, 180), 1));
-        p.drawLine(project(-180, lat), project(180, lat));
+        p.drawLine(project(-180,lat), project(180,lat));
     }
 
-    // Field letter labels at grid intersections
-    p.setFont(QFont("sans-serif", qMax(5, w/52)));
-    p.setPen(QColor(30, 80, 140, 160));
-    for (int fi = 0; fi < 18; ++fi) {
-        for (int li = 0; li < 18; ++li) {
-            const double lon = fi*20.0-180.0+10.0, lat = li*10.0-90.0+5.0;
-            const QPointF c = project(lon, lat);
-            if (c.x() < 0 || c.x() > w || c.y() < 0 || c.y() > mapH) continue;
-            QString lbl;
-            lbl.append(QChar('A'+fi));
-            lbl.append(QChar('A'+li));
-            const QFontMetrics fm(p.font());
-            const int tw = fm.horizontalAdvance(lbl);
-            p.drawText(QPointF(c.x()-tw/2, c.y()+fm.ascent()/2), lbl);
+    // ── Field labels — only when cells are tall enough ───────────────────────
+    // Font size strictly bounded by cell height so labels never overlap.
+    const int fontSize = qBound(4, cellH/2 - 1, cellW/3);
+    if (cellH >= 12 && fontSize >= 4) {
+        p.setFont(QFont("sans-serif", fontSize));
+        p.setPen(QColor(30, 80, 145, 170));
+        const QFontMetrics fm(p.font());
+        for (int fi = 0; fi < 18; ++fi) {
+            for (int li = 0; li < 18; ++li) {
+                const QPointF c = project(fi*20.0-180.0+10.0, li*10.0-90.0+5.0);
+                if (c.x() < 0 || c.x() > w || c.y() < 0 || c.y() > mapH) continue;
+                const QString lbl = QString("%1%2").arg(QChar('A'+fi)).arg(QChar('A'+li));
+                const int tw = fm.horizontalAdvance(lbl);
+                p.drawText(QPointF(c.x()-tw/2.0, c.y()+fm.ascent()/2.0), lbl);
+            }
         }
     }
 
-    // Equator and prime meridian — slightly brighter
-    p.setPen(QPen(QColor(30, 90, 160, 120), 1, Qt::DashLine));
+    // ── Equator / prime meridian ─────────────────────────────────────────────
+    p.setPen(QPen(QColor(30, 90, 160, 100), 1, Qt::DashLine));
     p.drawLine(project(-180,0), project(180,0));
     p.drawLine(project(0,-90), project(0,90));
 
-    // Highlighted field/square for selected station
+    // ── Selected station field + square highlight ────────────────────────────
     if (!m_selGrid.isEmpty()) {
-        const QString field = m_selGrid.left(2);
-        if (field.length() == 2) {
-            drawGridSquare(p, field, QColor(31,111,235,45), QColor(40,130,255,160), 1);
-        }
-        if (m_selGrid.length() >= 4) {
-            drawGridSquare(p, m_selGrid.left(4), QColor(77,166,255,70), QColor(100,200,255), 2);
-        }
+        drawGridSquare(p, m_selGrid.left(2), QColor(31,111,235,40), QColor(40,130,255,150), 1);
+        if (m_selGrid.length() >= 4)
+            drawGridSquare(p, m_selGrid.left(4), QColor(77,166,255,65), QColor(100,200,255), 2);
     }
 
-    // All period stations — dim dots
+    // ── All accumulated station dots ─────────────────────────────────────────
+    const double dotR = qMax(2.0, cellW * 0.10);
     for (auto const& s : m_stations) {
         if (s.call == m_selCall) continue;
         double lat, lon;
         if (!gridToLatLon(s.grid, lat, lon)) continue;
-        QColor col = s.forMe ? QColor(80,220,120,200) :
-                     s.isCQ  ? QColor(80,160,255,200) :
-                                QColor(90,110,140,160);
+        QColor col = s.forMe ? QColor(80,220,120,220) :
+                     s.isCQ  ? QColor(80,160,255,220) :
+                                QColor(90,110,150,170);
         const QPointF pt = project(lon, lat);
         p.setBrush(col); p.setPen(Qt::NoPen);
-        p.drawEllipse(pt, qMax(2.0, w*0.012), qMax(2.0, w*0.012));
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.drawEllipse(pt, dotR, dotR);
+        p.setRenderHint(QPainter::Antialiasing, false);
     }
 
-    // Great circle arc
+    // ── Great-circle arc ─────────────────────────────────────────────────────
     if (!m_selGrid.isEmpty() && !m_homeGrid.isEmpty())
         drawArc(p, m_homeLat, m_homeLon, m_selLat, m_selLon);
 
-    // Home QTH marker
+    // ── Home QTH ─────────────────────────────────────────────────────────────
     drawHomeMarker(p);
 
-    // Selected station marker
+    // ── Selected station ─────────────────────────────────────────────────────
     if (!m_selCall.isEmpty())
         drawStationMarker(p, m_selLat, m_selLon, m_selCall, QColor(255,100,80));
 
     drawInfoBar(p);
 }
+
 
 void DXStationMap::resizeEvent(QResizeEvent *e)
 {

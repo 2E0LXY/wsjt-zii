@@ -642,7 +642,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_dxMapDock->setFeatures(QDockWidget::DockWidgetMovable |
                             QDockWidget::DockWidgetFloatable |
                             QDockWidget::DockWidgetClosable);
-  addDockWidget(Qt::BottomDockWidgetArea, m_dxMapDock);
+  addDockWidget(Qt::LeftDockWidgetArea, m_dxMapDock);
 
   // Wire toggle into View menu so it can always be re-opened
   {
@@ -1961,7 +1961,7 @@ void MainWindow::readSettings()
   ui->cbCQonlyIncl73->setChecked(m_settings->value("CQonlyIncl73", false).toBool());
   ui->cbDockWF->setChecked(m_settings->value("dockWaterfall", false).toBool());
   ui->actionCall_info->setChecked(m_settings->value("showCallInfo", false).toBool());
-  ui->actionDark_mode->setChecked(m_settings->value("darkMode", false).toBool());
+  ui->actionDark_mode->setChecked(m_settings->value("darkMode", true).toBool());
   ui->actionShow_callsigns_on_waterfall->setChecked(
       m_settings->value("showCallsignsOnWaterfall", false).toBool());
   {
