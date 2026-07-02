@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-REPO="2E0LXY/wsjt-zii"
+REPO="2E0LXY/wsjt-y"
 TOKEN="${1:-${GH_TOKEN:-}}"
 
 if [[ -z "$TOKEN" ]]; then

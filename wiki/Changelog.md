@@ -14,7 +14,7 @@ Installers at the v3.0.0 release page are continuously updated.
 - **WSPR OSD depth extended to order-4** (`osdwspr.f90` ndeep=6, C(50,4)≈230k candidates).
   Exposed via a new **Decode > Maximum** menu tier passing `-o 6` to wsprd.
 - **FT8 NMS decoder** (`bpdecode174_91var_nms.f90`): experimental Normalized Min-Sum check-node
-  update (α=0.75, sign×min×α). Gated behind `WSJTZ_USE_NMS_DECODER=1` env var.
+  update (α=0.75, sign×min×α). Gated behind `WSJTY_USE_NMS_DECODER=1` env var.
   Not the default — needs on-air validation first.
 
 ### UI improvements
@@ -44,13 +44,13 @@ First release of the **2E0LXY** fork. Based on sq9fve/wsjt-z v2.0.16 (WSJT-X 3.0
 - 4 FT8 receive sensitivity improvements
 - Full GitHub Actions CI producing Linux .deb and Windows .exe
 - Windows DLL ABI issues resolved (static-linked runtime)
-- Complete WSJT-Zii identity and branding
+- Complete WSJT-Y identity and branding
 
 See [Changes from WSJT-Z](Changes-from-WSJT-Z) for the full change log.
 
 ### Downloads
-- `wsjtz-3.0.0-2.0.16-win64.exe` — Windows 10+ 64-bit installer
-- `wsjtz_3.0.0-2.0.16_amd64.deb` — Debian 12 / Ubuntu 22.04+ package
+- `wsjty-3.0.0-2.0.16-win64.exe` — Windows 10+ 64-bit installer
+- `wsjty_3.0.0-2.0.16_amd64.deb` — Debian 12 / Ubuntu 22.04+ package
 
 ---
 

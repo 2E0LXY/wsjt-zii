@@ -510,7 +510,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         m_config.udp_server_name (), m_config.udp_server_port (),
         m_config.udp_interface_names (), m_config.udp_TTL (),
         this}},
-  m_psk_Reporter {&m_config, QString {"WSJT-Zii v" + version () + " " + m_revision}.simplified ()},
+  m_psk_Reporter {&m_config, QString {"WSJT-Y v" + version () + " " + m_revision}.simplified ()},
   m_manual {&m_network_manager},
   m_block_udp_status_updates {false}
 {
@@ -638,11 +638,27 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_dxMapDock = new QDockWidget(tr("DX Station Map"), this);
   m_dxMapDock->setObjectName("DXStationMapDock");
   m_dxMapDock->setWidget(m_dxMap);
+  m_dxMapDock->setMinimumHeight(180);
   m_dxMapDock->setFeatures(QDockWidget::DockWidgetMovable |
                             QDockWidget::DockWidgetFloatable |
                             QDockWidget::DockWidgetClosable);
   addDockWidget(Qt::BottomDockWidgetArea, m_dxMapDock);
-  m_dxMapDock->resize(m_dxMapDock->width(), 200);
+
+  // Wire toggle into View menu so it can always be re-opened
+  {
+    QAction *toggleAct = m_dxMapDock->toggleViewAction();
+    toggleAct->setText(tr("DX Station Map"));
+    toggleAct->setToolTip(tr("Show or hide the DX Station Map panel"));
+    // Find the View menu by title — avoids hard-coding a widget-name that may differ
+    for (auto *menu : menuBar()->findChildren<QMenu*>()) {
+      if (menu->title().contains("View", Qt::CaseInsensitive)) {
+        menu->addSeparator();
+        menu->addAction(toggleAct);
+        break;
+      }
+    }
+  }
+
   // Set home grid square from configuration (deferred — config not fully loaded yet)
   if (!m_config.my_grid().isEmpty())
       m_dxMap->setHomeGrid(m_config.my_grid());
@@ -870,7 +886,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
       if (m_pskReporterView) m_pskReporterView->setFont(font);
     });
 
-  setWindowTitle (program_title () + " (WSJT-Zii by 2E0LXY v" + QStringLiteral (VERSION_Z) + ")");
+  setWindowTitle (program_title () + " (WSJT-Y by 2E0LXY v" + QStringLiteral (VERSION_Z) + ")");
 
 
   connect(&proc_jt9, &QProcess::readyReadStandardOutput, this, &MainWindow::readFromStdout);
@@ -1285,6 +1301,8 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   fixStop();
   VHF_features_enabled(m_config.enable_VHF_features());
   m_wideGraph->setVHF(m_config.enable_VHF_features());
+  if (m_dxMap && !m_config.my_grid().isEmpty())
+      m_dxMap->setHomeGrid(m_config.my_grid());
 
   connect( wsprNet, SIGNAL(uploadStatus(QString)), this, SLOT(uploadResponse(QString)));
 
@@ -1949,7 +1967,7 @@ void MainWindow::readSettings()
   {
     bool nms = m_settings->value("nmsDecoder", false).toBool();
     ui->actionNMS_decoder->setChecked(nms);
-    qputenv("WSJTZ_USE_NMS_DECODER", nms ? "1" : "0");
+    qputenv("WSJTY_USE_NMS_DECODER", nms ? "1" : "0");
   }
   ui->cb_filtering->setChecked(m_settings->value("filter_enabled", true).toBool());
   // Misc tab
@@ -4153,7 +4171,7 @@ void MainWindow::on_actionActiveStations_triggered()
 void MainWindow::update_tx5(const QString &qsy_text)
 {
   if (m_hisCall == "") {
-    MessageBox::warning_message(this, "WSJT-Zii",
+    MessageBox::warning_message(this, "WSJT-Y",
                                 "There must be a callsign in the\n DX Call Box to send QSY Request");
   } else {
     QString text = qsy_text;
@@ -15311,11 +15329,11 @@ void MainWindow::switchBand(int row) {
 void MainWindow::ZMessage ()
 {
 
-    QString message = "WSJT-Zii v" + QStringLiteral (VERSION_Z) + " — independent fork by 2E0LXY<br /><br />"
-                        "Source &amp; releases: <a href='https://github.com/2E0LXY/wsjt-zii'>github.com/2E0LXY/wsjt-zii</a><br /><br />"
+    QString message = "WSJT-Y v" + QStringLiteral (VERSION_Z) + " — independent fork by 2E0LXY<br /><br />"
+                        "Source &amp; releases: <a href='https://github.com/2E0LXY/wsjt-y'>github.com/2E0LXY/wsjt-y</a><br /><br />"
                         "Based on <a href='https://github.com/sq9fve/wsjt-z'>WSJT-Z by SQ9FVE</a>, itself based on "
                         "<a href='https://wsjt.sourceforge.io/'>WSJT-X</a> by K1JT et al.<br /><br />"
-                        "Bug reports: <a href='https://github.com/2E0LXY/wsjt-zii/issues'>github.com/2E0LXY/wsjt-zii/issues</a>";
+                        "Bug reports: <a href='https://github.com/2E0LXY/wsjt-y/issues'>github.com/2E0LXY/wsjt-y/issues</a>";
 
     MessageBox::information_message(this, message);
 }
@@ -15537,8 +15555,8 @@ void MainWindow::on_actionNMS_decoder_toggled(bool checked)
   // Update the process environment immediately so the next decode period
   // picks up the change without restarting the application.
   // The Fortran decoder (bpdecode174_91var_nms.f90) reads this via
-  // get_environment_variable("WSJTZ_USE_NMS_DECODER") at each call site.
-  qputenv("WSJTZ_USE_NMS_DECODER", checked ? "1" : "0");
+  // get_environment_variable("WSJTY_USE_NMS_DECODER") at each call site.
+  qputenv("WSJTY_USE_NMS_DECODER", checked ? "1" : "0");
 }
 
 void MainWindow::updateWaterfallCallsigns()

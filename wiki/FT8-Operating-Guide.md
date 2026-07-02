@@ -1,6 +1,6 @@
 # FT8 Operating Guide
 
-FT8 (Franke-Taylor design, 8-FSK modulation) is the most widely used digital weak-signal mode. This guide covers everyday FT8 operating with WSJT-Zii.
+FT8 (Franke-Taylor design, 8-FSK modulation) is the most widely used digital weak-signal mode. This guide covers everyday FT8 operating with WSJT-Y.
 
 ---
 
@@ -10,7 +10,7 @@ FT8 (Franke-Taylor design, 8-FSK modulation) is the most widely used digital wea
 - **Bandwidth:** 50 Hz per signal
 - **Message:** 77 bits — callsigns + locator or signal report
 - **Theoretical sensitivity:** −27.5 dB S/N (Shannon limit)
-- **Practical sensitivity:** −21 dB (standard), −25 dB (WSJT-Zii high-sensitivity mode)
+- **Practical sensitivity:** −21 dB (standard), −25 dB (WSJT-Y high-sensitivity mode)
 
 Each 15-second period:
 - 0.0–12.6 s — audio transmission
@@ -38,7 +38,7 @@ Good waterfall noise floor: grey/blue background with individual signal traces c
 1. Set your dial frequency (e.g. 14.074 MHz)
 2. Set TX frequency in the waterfall to a clear spot
 3. Check **"Enable Tx"** and click **"CQ"**
-4. WSJT-Zii transmits on the next even or odd period
+4. WSJT-Y transmits on the next even or odd period
 
 A standard CQ message: `CQ 2E0LXY IO93`
 
@@ -46,7 +46,7 @@ A standard CQ message: `CQ 2E0LXY IO93`
 
 1. Double-click the CQ call in the decoded messages panel
 2. Your DX Call and grid are automatically set
-3. WSJT-Zii responds with: `2E0LXY G3ABC IO91`
+3. WSJT-Y responds with: `2E0LXY G3ABC IO91`
 4. The QSO proceeds automatically through Report → R+Report → RRR → 73
 
 ### Standard QSO sequence
@@ -64,7 +64,7 @@ G3ABC 2E0LXY RRR        ← CQ station confirms receipt
 
 ## Decoding
 
-WSJT-Zii runs the decoder at the end of each 15-second period. Decoded stations appear in the panel below the waterfall.
+WSJT-Y runs the decoder at the end of each 15-second period. Decoded stations appear in the panel below the waterfall.
 
 Columns:
 - **UTC** — time of decode (e.g. `1425`)
@@ -87,7 +87,7 @@ Columns:
 
 ## Sensitivity modes
 
-WSJT-Zii has three sensitivity levels accessible from **Decode → Sensitivity**:
+WSJT-Y has three sensitivity levels accessible from **Decode → Sensitivity**:
 
 | Mode | syncmin | OSD ndeep | Use |
 |------|---------|-----------|-----|
@@ -95,7 +95,7 @@ WSJT-Zii has three sensitivity levels accessible from **Decode → Sensitivity**
 | **Low thresholds** | 0.9–1.225 | 5/6 | DXing, propagation monitoring |
 | **Subpass** | 0.9 | 6 | Maximum sensitivity; slower |
 
-The Shannon limit for FT8 is −27.5 dB S/N. WSJT-Zii's high-sensitivity mode approaches −25 dB.
+The Shannon limit for FT8 is −27.5 dB S/N. WSJT-Y's high-sensitivity mode approaches −25 dB.
 
 > **Note:** Sensitivity below −26 dB is not achievable for FT8 regardless of algorithm — this is a hard physical limit set by the 77-bit payload, 50 Hz bandwidth and 12.64 s transmission time.
 
@@ -103,13 +103,13 @@ The Shannon limit for FT8 is −27.5 dB S/N. WSJT-Zii's high-sensitivity mode ap
 
 ## Auto Sequence (auto-call)
 
-WSJT-Zii can operate fully automatically:
+WSJT-Y can operate fully automatically:
 
 1. Tick **"Auto Seq"** in the main window
 2. Tick **"Enable Tx"**
-3. When a CQ is decoded from a desired station, WSJT-Zii responds automatically and works through the full QSO sequence
+3. When a CQ is decoded from a desired station, WSJT-Y responds automatically and works through the full QSO sequence
 
-**Filters** limit which CQs are automatically answered. See [WSJT-Zii Features](WSJT-Zii-Features#signal-filtering).
+**Filters** limit which CQs are automatically answered. See [WSJT-Y Features](WSJT-Y-Features#signal-filtering).
 
 ---
 
@@ -128,7 +128,7 @@ On a busy contest weekend, the main FT8 frequency (e.g. 14.074 MHz) may have hun
 
 ## PSK Reporter
 
-WSJT-Zii can upload spots to **PSK Reporter** (https://pskreporter.info) automatically. Enable in **Settings → Reporting → PSK Reporter**.
+WSJT-Y can upload spots to **PSK Reporter** (https://pskreporter.info) automatically. Enable in **Settings → Reporting → PSK Reporter**.
 
 PSK Reporter shows a real-time map of what you are receiving and who is receiving you — very useful for checking propagation.
 

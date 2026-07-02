@@ -163,6 +163,7 @@ std::unique_ptr<Transceiver> TransceiverFactory::create (ParameterPack const& pa
       break;
 
 #if defined (WIN32) && !defined (WSJT_NO_OMNIRIG)
+    case OmniRigOneId:
       {
         std::unique_ptr<TransceiverBase> basic_transceiver;
         if (PTT_method_CAT != params.ptt_type && "CAT" != params.ptt_port)

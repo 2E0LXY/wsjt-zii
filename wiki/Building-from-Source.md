@@ -23,8 +23,8 @@ sudo apt-get install -y \
 ### Clone and build
 
 ```bash
-git clone https://github.com/2E0LXY/wsjt-zii
-cd wsjt-zii
+git clone https://github.com/2E0LXY/wsjt-y
+cd wsjt-y
 mkdir build && cd build
 
 cmake -G Ninja \
@@ -41,7 +41,7 @@ ninja -j$(nproc)
 
 ```bash
 cpack -G DEB
-sudo dpkg -i wsjtz_*.deb
+sudo dpkg -i wsjty_*.deb
 ```
 
 ### CMake options
@@ -116,8 +116,8 @@ cd ..
 ### 5. Configure and build
 
 ```bash
-git clone https://github.com/2E0LXY/wsjt-zii
-cd wsjt-zii
+git clone https://github.com/2E0LXY/wsjt-y
+cd wsjt-y
 mkdir build && cd build
 
 cmake -G Ninja \
@@ -147,8 +147,8 @@ The repository includes two workflow files in `.github/workflows/`:
 
 | File | Trigger | Output |
 |------|---------|--------|
-| `linux-deb.yml` | Push to tag `v*` or manual dispatch | `wsjtz_*.deb` |
-| `windows-installer.yml` | Push to tag `v*` or manual dispatch | `wsjtz-*-win64.exe` |
+| `linux-deb.yml` | Push to tag `v*` or manual dispatch | `wsjty_*.deb` |
+| `windows-installer.yml` | Push to tag `v*` or manual dispatch | `wsjty-*-win64.exe` |
 
 To trigger a manual build: **GitHub → Actions → [workflow] → Run workflow**.
 

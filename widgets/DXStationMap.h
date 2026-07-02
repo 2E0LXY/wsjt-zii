@@ -1,7 +1,7 @@
 #ifndef DXSTATIONMAP_H
 #define DXSTATIONMAP_H
 
-// DXStationMap — a dockable Maidenhead grid + great-circle map for WSJT-Zii.
+// DXStationMap — a dockable Maidenhead grid + great-circle map for WSJT-Y.
 //
 // Pure QPainter implementation; no extra dependencies beyond Qt5 Base.
 // The map is a flat Mercator-equivalent projection of the 18×18 Maidenhead

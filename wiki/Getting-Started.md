@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide covers first-run configuration of WSJT-Zii: audio, station details, and radio CAT control.
+This guide covers first-run configuration of WSJT-Y: audio, station details, and radio CAT control.
 
 ---
 
@@ -46,7 +46,7 @@ Leave at **48000 Hz** unless your soundcard does not support it. 44100 Hz is als
 
 ### CAT control (recommended)
 
-CAT control allows WSJT-Zii to automatically switch frequency and report your band to PSK Reporter.
+CAT control allows WSJT-Y to automatically switch frequency and report your band to PSK Reporter.
 
 1. Set **Rig** to your transceiver model (e.g. `Icom IC-7300`, `Yaesu FT-991A`, `Kenwood TS-890S`)
 2. Set **Serial port** to the COM port (Windows) or `/dev/ttyUSB0` (Linux) of your CAT cable
@@ -64,13 +64,13 @@ CAT control allows WSJT-Zii to automatically switch frequency and report your ba
 
 ### Split operation
 
-For FT8 contest and DX work, **Split mode: Fake It** is recommended. WSJT-Zii uses the RIT/XIT of the radio to transmit slightly offset from receive, reducing QRM to other stations on the calling frequency.
+For FT8 contest and DX work, **Split mode: Fake It** is recommended. WSJT-Y uses the RIT/XIT of the radio to transmit slightly offset from receive, reducing QRM to other stations on the calling frequency.
 
 ---
 
 ## Frequencies tab
 
-WSJT-Zii ships with the standard WSJT-X frequency table. Common FT8 frequencies:
+WSJT-Y ships with the standard WSJT-X frequency table. Common FT8 frequencies:
 
 | Band | FT8 Dial Frequency |
 |------|--------------------|
@@ -91,7 +91,7 @@ WSJT-Zii ships with the standard WSJT-X frequency table. Common FT8 frequencies:
 
 ## Log setup
 
-WSJT-Zii can log contacts to:
+WSJT-Y can log contacts to:
 
 - **ADIF file** — automatically saved to `wsjtx_log.adi` in your log directory
 - **Cabrillo** — for contest log export
@@ -101,7 +101,7 @@ For UDP logging, go to **Settings → Reporting** and set the server address and
 
 ### N1MM+ integration
 
-In N1MM+, enable **UDP Broadcast → WSJT-X** on port 2237. In WSJT-Zii set **Reporting → N1MM+ Server** to `localhost:2237`.
+In N1MM+, enable **UDP Broadcast → WSJT-X** on port 2237. In WSJT-Y set **Reporting → N1MM+ Server** to `localhost:2237`.
 
 ---
 
@@ -118,5 +118,5 @@ The ALC meter should remain **off or barely deflecting**. ALC compression on FT8
 ## Next steps
 
 - **[FT8 Operating Guide](FT8-Operating-Guide)** — making your first contact
-- **[WSJT-Zii Features](WSJT-Zii-Features)** — auto-call, filters, and band-hopper
+- **[WSJT-Y Features](WSJT-Y-Features)** — auto-call, filters, and band-hopper
 - **[Troubleshooting](Troubleshooting)** — if something isn't working

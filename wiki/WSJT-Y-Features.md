@@ -1,12 +1,12 @@
-# WSJT-Zii Features
+# WSJT-Y Features
 
-Features added or improved by 2E0LXY's WSJT-Zii fork beyond the base WSJT-Z (sq9fve) and WSJT-X 3.0.0 implementation.
+Features added or improved by 2E0LXY's WSJT-Y fork beyond the base WSJT-Z (sq9fve) and WSJT-X 3.0.0 implementation.
 
 ---
 
 ## Multi-threaded FT8 decoder
 
-WSJT-Zii runs multiple decoder threads in parallel during each receive period. Configure in **Settings → WSJT-Zii → FT8 Threads**. Default matches your CPU core count.
+WSJT-Y runs multiple decoder threads in parallel during each receive period. Configure in **Settings → WSJT-Y → FT8 Threads**. Default matches your CPU core count.
 
 ---
 
@@ -45,7 +45,7 @@ The `maxosd` pass counter caps in `decode174_91.f90`, `decode240_101.f90`, and `
 
 ### Experimental NMS decoder
 
-`bpdecode174_91var_nms.f90` implements a Normalized Min-Sum check-node update (α=0.75) as an alternative to the default sum-product (tanh/atanh) decoder. Claimed gain: +0.2–0.4 dB. Enable with `WSJTZ_USE_NMS_DECODER=1` environment variable. **Not the default** — needs on-air validation first.
+`bpdecode174_91var_nms.f90` implements a Normalized Min-Sum check-node update (α=0.75) as an alternative to the default sum-product (tanh/atanh) decoder. Claimed gain: +0.2–0.4 dB. Enable with `WSJTY_USE_NMS_DECODER=1` environment variable. **Not the default** — needs on-air validation first.
 
 ---
 

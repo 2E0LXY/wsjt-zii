@@ -5,7 +5,7 @@ UnfilteredView::UnfilteredView(QWidget *parent) :
     QFrame(parent),
     ui(new Ui::UnfilteredView)
 {
-    setWindowTitle ("WSJT-Z - Unfiltered View");
+    setWindowTitle ("WSJT-Y - Unfiltered View");
     ui->setupUi(this);
 }
 

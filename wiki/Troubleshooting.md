@@ -12,7 +12,7 @@ The installer is not code-signed. Click **More info** then **Run anyway**.
 
 ### "Entry Point Not Found: `__emutls_v_ZSt11__once_call`" or "`_ZSt15__get_once_callv`"
 
-You have an old installer with a DLL mismatch bug. Download the **latest release** from https://github.com/2E0LXY/wsjt-zii/releases — this is fixed in v3.0.0 and later via static-linked runtime.
+You have an old installer with a DLL mismatch bug. Download the **latest release** from https://github.com/2E0LXY/wsjt-y/releases — this is fixed in v3.0.0 and later via static-linked runtime.
 
 ### Linux: `dpkg: dependency problems`
 
@@ -59,12 +59,12 @@ Your audio input level is too high. Reduce the level in your radio or soundcard 
 1. Verify the COM port number in Device Manager (Windows) or `ls /dev/ttyUSB*` (Linux)
 2. Check baud rate matches your radio's setting
 3. Try toggling **RTS** and **DTR** settings
-4. Ensure no other application (logging software, another instance of WSJT-Zii) has the port open
+4. Ensure no other application (logging software, another instance of WSJT-Y) has the port open
 5. On Linux: check permissions — `sudo usermod -a -G dialout $USER` then log out/in
 
 ### Radio doesn't switch bands
 
-WSJT-Zii changes frequency when you select a different band/frequency. Ensure **CAT** is enabled and the Test CAT button is green.
+WSJT-Y changes frequency when you select a different band/frequency. Ensure **CAT** is enabled and the Test CAT button is green.
 
 ### Wrong frequency displayed
 
@@ -126,13 +126,13 @@ ALC is compressing. Reduce the output level in Settings → Audio or in your rad
 
 ### Contact not logged
 
-- WSJT-Zii logs a contact when `73` or `RRR` is received and confirmed
+- WSJT-Y logs a contact when `73` or `RRR` is received and confirmed
 - Check the log file path in Settings → Reporting
 - If using UDP logging, verify the logging application is running
 
 ### Duplicate contacts in log
 
-Turn on **"Worked before" indicator** — this highlights previously worked stations in the decode panel. Consider enabling **message tombstoning** in Settings → WSJT-Zii.
+Turn on **"Worked before" indicator** — this highlights previously worked stations in the decode panel. Consider enabling **message tombstoning** in Settings → WSJT-Y.
 
 ---
 
@@ -151,6 +151,6 @@ Turn on **"Worked before" indicator** — this highlights previously worked stat
 
 If your issue is not covered here:
 
-1. Check the [GitHub Issues](https://github.com/2E0LXY/wsjt-zii/issues) for known problems
-2. Open a new issue with your OS, WSJT-Zii version, and a description of the problem
-3. Include the debug log: enable via **Help → WSJT-Zii Debug**, reproduce the issue, then attach `wsjtx_debug.log`
+1. Check the [GitHub Issues](https://github.com/2E0LXY/wsjt-y/issues) for known problems
+2. Open a new issue with your OS, WSJT-Y version, and a description of the problem
+3. Include the debug log: enable via **Help → WSJT-Y Debug**, reproduce the issue, then attach `wsjtx_debug.log`

@@ -1,14 +1,14 @@
-# WSJT-Zii
+# WSJT-Y
 
-**WSJT-Zii** is an independent fork of [WSJT-Z](https://github.com/sq9fve/wsjt-z) by SQ9FVE, which is itself based on [WSJT-X](https://physics.princeton.edu/pulsar/k1jt/wsjtx.html) by K1JT et al.
+**WSJT-Y** is an independent fork of [WSJT-Z](https://github.com/sq9fve/wsjt-z) by SQ9FVE, which is itself based on [WSJT-X](https://physics.princeton.edu/pulsar/k1jt/wsjtx.html) by K1JT et al.
 
 Maintained by **2E0LXY** (Daren Loxley, Wakefield, West Yorkshire, UK).
 
 ---
 
-## What is WSJT-Zii?
+## What is WSJT-Y?
 
-WSJT-Zii supports the following digital modes for amateur radio weak-signal communication:
+WSJT-Y supports the following digital modes for amateur radio weak-signal communication:
 
 | Mode | T/R Period | Typical Sensitivity | Use Case |
 |------|-----------|---------------------|----------|
@@ -22,7 +22,7 @@ WSJT-Zii supports the following digital modes for amateur radio weak-signal comm
 | **FST4** | 15–1800 s | −40 dB | Very weak-signal HF |
 | **Q65** | 15–60 s | −25 dB | EME, aircraft scatter |
 
-WSJT-Zii adds beyond the base WSJT-X/Z feature set:
+WSJT-Y adds beyond the base WSJT-X/Z feature set:
 
 - **Multi-threaded FT8 decoder** — scans more candidates in parallel
 - **Auto-call / auto-sequence** — automatically responds to CQ calls
@@ -37,9 +37,9 @@ WSJT-Zii adds beyond the base WSJT-X/Z feature set:
 
 | | |
 |---|---|
-| **Latest release** | https://github.com/2E0LXY/wsjt-zii/releases/latest |
-| **Source code** | https://github.com/2E0LXY/wsjt-zii |
-| **Bug reports** | https://github.com/2E0LXY/wsjt-zii/issues |
+| **Latest release** | https://github.com/2E0LXY/wsjt-y/releases/latest |
+| **Source code** | https://github.com/2E0LXY/wsjt-y |
+| **Bug reports** | https://github.com/2E0LXY/wsjt-y/issues |
 
 ---
 
@@ -50,7 +50,7 @@ WSJT-Zii adds beyond the base WSJT-X/Z feature set:
 - **[FT8 Operating Guide](FT8-Operating-Guide)** — complete FT8 reference
 - **[Modes Reference](Modes-Reference)** — all supported modes
 - **[Configuration Reference](Configuration-Reference)** — every settings option
-- **[WSJT-Zii Features](WSJT-Zii-Features)** — features beyond WSJT-X
+- **[WSJT-Y Features](WSJT-Y-Features)** — features beyond WSJT-X
 - **[Building from Source](Building-from-Source)** — Linux and Windows build guide
 - **[Windows Build Pitfalls](Windows-Build-Pitfalls)** — MSYS2/MinGW technical reference
 - **[Changes from WSJT-Z](Changes-from-WSJT-Z)** — bugs fixed, improvements

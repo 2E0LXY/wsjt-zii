@@ -2,17 +2,17 @@
 
 ---
 
-## WSJT-Zii
+## WSJT-Y
 
-WSJT-Zii is distributed under the **GNU General Public Licence, version 3** (GPL-3.0).
+WSJT-Y is distributed under the **GNU General Public Licence, version 3** (GPL-3.0).
 
 Copyright:
 - WSJT-X core: © 2001–2026 K1JT (Joe Taylor) and the WSJT-X development team
 - WSJT-Z extensions: © SQ9FVE (Mateusz Lubas)
-- WSJT-Zii modifications: © 2026 2E0LXY (Daren Loxley)
+- WSJT-Y modifications: © 2026 2E0LXY (Daren Loxley)
 
 You are free to:
-- **Use** WSJT-Zii for any purpose
+- **Use** WSJT-Y for any purpose
 - **Study** how it works and adapt it
 - **Redistribute** copies
 - **Improve** the software and release your improvements to the public

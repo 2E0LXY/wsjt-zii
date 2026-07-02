@@ -45,11 +45,11 @@ Combined improvement: up to ~2–3 dB over standard WSJT-Z in high-sensitivity m
 
 ### Identity / branding
 
-Rebranded to **WSJT-Zii**, independent of sq9fve/wsjt-z:
+Rebranded to **WSJT-Y**, independent of sq9fve/wsjt-z:
 
-- Title bar: `WSJT-Z MOD by SQ9FVE` → `WSJT-Zii by 2E0LXY`
+- Title bar: `WSJT-Z MOD by SQ9FVE` → `WSJT-Y by 2E0LXY`
 - About dialog: groups.io / sourceforge links → 2E0LXY GitHub
-- PSK Reporter user-agent: `WSJT-X` → `WSJT-Zii`
+- PSK Reporter user-agent: `WSJT-X` → `WSJT-Y`
 - NSIS installer: ProductName, FileDescription, menu links updated
 - CMake: PROJECT_VENDOR, PROJECT_CONTACT, PROJECT_HOMEPAGE, PROJECT_COPYRIGHT updated
 - Example callsign in tooltip: SQ9FVE → 2E0LXY
@@ -68,4 +68,4 @@ The following features are inherited from WSJT-Z and are not changes by 2E0LXY:
 - Message tombstoning
 - OTP generator
 
-See the [WSJT-Zii Features](WSJT-Zii-Features) page for how these features work.
+See the [WSJT-Y Features](WSJT-Y-Features) page for how these features work.

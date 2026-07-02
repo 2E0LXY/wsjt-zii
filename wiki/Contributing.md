@@ -6,13 +6,13 @@ Contributions are welcome. This page covers how to report bugs, submit patches, 
 
 ## Reporting bugs
 
-1. Check [existing issues](https://github.com/2E0LXY/wsjt-zii/issues) first
+1. Check [existing issues](https://github.com/2E0LXY/wsjt-y/issues) first
 2. Open a new issue with:
    - **OS** and **version** (e.g. Windows 10 64-bit, Ubuntu 22.04)
-   - **WSJT-Zii version** (title bar shows this)
+   - **WSJT-Y version** (title bar shows this)
    - **Steps to reproduce**
    - **Expected vs actual behaviour**
-   - **Debug log** if applicable — enable via **Help → WSJT-Zii Debug**
+   - **Debug log** if applicable — enable via **Help → WSJT-Y Debug**
 
 ---
 
@@ -52,7 +52,7 @@ Types: `fix`, `feat`, `ci`, `docs`, `refactor`, `perf`
 ## Architecture
 
 ```
-wsjt-zii/
+wsjt-y/
 ├── widgets/mainwindow.cpp    # Main UI — auto-call, filters, band-hopper
 ├── lib/ft8var/               # Multi-threaded FT8 decoder (wsjt-z specific)
 │   ├── ft8_decodevar.f90     # Top-level FT8 decode orchestration
@@ -105,6 +105,6 @@ Both workflows (`linux-deb.yml` and `windows-installer.yml`) run automatically o
 
 ## Licence
 
-WSJT-Zii is GPL-3.0. Any contribution must be compatible with GPL-3.0.
+WSJT-Y is GPL-3.0. Any contribution must be compatible with GPL-3.0.
 
 See [Licence](Licence) for full details.

@@ -2075,14 +2075,14 @@ subroutine ft8bvar(newdat1,nQSOProgress,nfqso,nftx,napwid,lsubtract,npos,freqsub
               endif
            endif
            cw=0
-           ! EXPERIMENTAL: WSJTZ_USE_NMS_DECODER=1 switches the BP check-node
+           ! EXPERIMENTAL: WSJTY_USE_NMS_DECODER=1 switches the BP check-node
            ! update from exact sum-product (tanh/atanh) to Normalized Min-Sum
            ! (sign*min*alpha, alpha=0.75) -- see bpdecode174_91var_nms.f90
            ! header for full background. Default (unset) keeps the proven
            ! sum-product decoder; this has not been empirically validated
            ! against real weak-signal traffic, only verified to compile and
            ! follow the published NMS construction correctly.
-           call get_environment_variable("WSJTZ_USE_NMS_DECODER",envbuf,envlen)
+           call get_environment_variable("WSJTY_USE_NMS_DECODER",envbuf,envlen)
            if(envlen.gt.0 .and. envbuf(1:1).eq.'1') then
               call bpdecode174_91var_nms(llrz,apmask,max_iterations,message77,cw, &
                    nharderrors,niterations)

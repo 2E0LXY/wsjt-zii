@@ -39,7 +39,7 @@ project (wsjtx
   VERSION ${WSJTX_VERSION_MAJOR}.${WSJTX_VERSION_MINOR}.${WSJTX_VERSION_PATCH}.0
   LANGUAGES C CXX Fortran
   )
-set (PROJECT_DESCRIPTION "WSJT-Zii: independent fork of WSJT-Z by 2E0LXY")
+set (PROJECT_DESCRIPTION "WSJT-Y: independent fork of WSJT-Z by 2E0LXY")
 set (CMAKE_PROJECT_DESCRIPTION ${PROJECT_DESCRIPTION})
 
 # Optional OmniRig CAT-control support (Windows only, requires OmniRig installed).
@@ -70,13 +70,13 @@ set (wsjtx_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_
 # project information
 #
 ## // Z
-set (PROJECT_BUNDLE_NAME "WSJT-Zii")
+set (PROJECT_BUNDLE_NAME "WSJT-Y")
 set (PROJECT_VENDOR "2E0LXY")
 set (PROJECT_CONTACT "2E0LXY")
 set (PROJECT_COPYRIGHT "Copyright (C) 2001-2026 by K1JT et al. Fork (C) 2026 by 2E0LXY")
-set (PROJECT_HOMEPAGE https://github.com/2E0LXY/wsjt-zii)
+set (PROJECT_HOMEPAGE https://github.com/2E0LXY/wsjt-y)
 set (PROJECT_MANUAL wsjtx-main)
-set (PROJECT_MANUAL_DIRECTORY_URL https://github.com/2E0LXY/wsjt-zii)
+set (PROJECT_MANUAL_DIRECTORY_URL https://github.com/2E0LXY/wsjt-y)
 set (PROJECT_SAMPLES_URL https://sourceforge.net/projects/wsjt/files/)
 #set (PROJECT_SAMPLES_UPLOAD_DEST frs.sourceforge.net:/home/frs/project/wsjt/)
 # WSJT-Z mod version suffix shown in UI and package metadata.
@@ -1164,7 +1164,7 @@ if (NOT APPLE)
 endif (NOT APPLE)
 
 # On Windows/MinGW the MSYS2 packages (Qt, ICU, Boost) are built with the
-# current GCC (16.x at time of writing) while we must compile WSJT-Zii with
+# current GCC (16.x at time of writing) while we must compile WSJT-Y with
 # GCC 14 to avoid the .tls_common Fortran regression (GCC 15+ bug).  Mixing
 # executables built with GCC 14 and shared DLLs built with GCC 16 causes
 # two distinct crashes at launch:
@@ -1968,12 +1968,12 @@ endif ()
 # packaging
 #
 set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/package_description.txt")
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "WSJT-Zii — FT8/WSPR digital modes (2E0LXY fork)")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "WSJT-Y — FT8/WSPR digital modes (2E0LXY fork)")
 set (CPACK_MONOLITHIC_INSTALL 1)
 set (CPACK_PACKAGE_VENDOR "2E0LXY")
 set (CPACK_PACKAGE_CONTACT "2E0LXY")
 ## Z
-set (CPACK_PACKAGE_NAME "wsjtz")
+set (CPACK_PACKAGE_NAME "wsjty")
 set (CPACK_PACKAGE_VERSION_Z "${VERSION_Z}")
 set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})

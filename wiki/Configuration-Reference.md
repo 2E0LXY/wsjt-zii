@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Complete reference for all WSJT-Zii settings (**File → Settings** or `F2`).
+Complete reference for all WSJT-Y settings (**File → Settings** or `F2`).
 
 ---
 
@@ -27,7 +27,7 @@ Complete reference for all WSJT-Zii settings (**File → Settings** or `F2`).
 | **Data bits** | Typically 8 |
 | **Stop bits** | Typically 1 or 2 |
 | **Handshake** | None, XON/XOFF, Hardware |
-| **Poll interval** | How often WSJT-Zii queries radio status (ms) |
+| **Poll interval** | How often WSJT-Y queries radio status (ms) |
 | **Split mode** | None / Fake It / Rig: controls transmit frequency split |
 | **PTT method** | CAT / DTR / RTS / VOX / None |
 | **PTT port** | Serial port for hardware PTT (if not using CAT PTT) |
@@ -77,9 +77,9 @@ Manage the list of band/mode frequencies shown in the Band/Freq selectors. You c
 
 ---
 
-## WSJT-Zii tab
+## WSJT-Y tab
 
-Settings specific to WSJT-Zii (not present in base WSJT-X):
+Settings specific to WSJT-Y (not present in base WSJT-X):
 
 | Setting | Description |
 |---------|-------------|
@@ -117,7 +117,7 @@ Settings specific to WSJT-Zii (not present in base WSJT-X):
 | `F3` | Open Log QSO |
 | `F4` | Clear DX Call / Grid |
 | `F5` | Show WSPR decoded messages |
-| `Ctrl+F1` | About WSJT-Zii |
+| `Ctrl+F1` | About WSJT-Y |
 | `Ctrl+G` | Open Band Hopper |
 | `Ctrl+L` | Open Ordered decode messages |
 | `Space` | Enable / Disable Tx |

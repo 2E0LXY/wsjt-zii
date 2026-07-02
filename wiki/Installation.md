@@ -8,15 +8,15 @@
 
 ### Steps
 
-1. Go to the [Releases page](https://github.com/2E0LXY/wsjt-zii/releases/latest)
-2. Download `wsjtz-3.0.0-2.0.16-win64.exe`
+1. Go to the [Releases page](https://github.com/2E0LXY/wsjt-y/releases/latest)
+2. Download `wsjty-3.0.0-2.0.16-win64.exe`
 3. Run the installer — accept the UAC prompt
 4. Default install path: `C:\WSJT\wsjtx\`
-5. A desktop shortcut and Start Menu entry for **WSJT-Zii** are created
+5. A desktop shortcut and Start Menu entry for **WSJT-Y** are created
 
 ### Uninstall
 
-Use **Add or Remove Programs** → search for **WSJT-Zii** → Uninstall.
+Use **Add or Remove Programs** → search for **WSJT-Y** → Uninstall.
 
 ### Upgrading
 
@@ -32,11 +32,11 @@ Run the new installer over the existing installation. Settings in `%APPDATA%\WSJ
 
 ### Steps
 
-1. Download `wsjtz_3.0.0-2.0.16_amd64.deb` from the [Releases page](https://github.com/2E0LXY/wsjt-zii/releases/latest)
+1. Download `wsjty_3.0.0-2.0.16_amd64.deb` from the [Releases page](https://github.com/2E0LXY/wsjt-y/releases/latest)
 
 2. Install:
 ```bash
-sudo dpkg -i wsjtz_3.0.0-2.0.16_amd64.deb
+sudo dpkg -i wsjty_3.0.0-2.0.16_amd64.deb
 sudo apt-get install -f          # fix any missing dependencies
 ```
 
@@ -52,7 +52,7 @@ Install the new `.deb` over the old one — `dpkg` will replace in place. Config
 ### Removing
 
 ```bash
-sudo dpkg -r wsjtz
+sudo dpkg -r wsjty
 ```
 
 ---
@@ -66,8 +66,8 @@ See the **[Getting Started](Getting-Started)** guide for audio device selection,
 ## Verifying the installation
 
 After launch you should see:
-- Title bar: **wsjtx  (WSJT-Zii by 2E0LXY v2.0.16)**
-- **Help → About WSJT-Zii** shows the version and GitHub link
+- Title bar: **wsjtx  (WSJT-Y by 2E0LXY v2.0.16)**
+- **Help → About WSJT-Y** shows the version and GitHub link
 
 If you see an older title bar (e.g. "WSJT-Z MOD by SQ9FVE"), you have an old release installed. Download the latest from the releases page.
 

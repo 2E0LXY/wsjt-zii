@@ -1,17 +1,17 @@
-# WSJT-Zii
+# WSJT-Y
 
-**WSJT-Zii** is an independent fork of [WSJT-Z](https://github.com/sq9fve/wsjt-z) by SQ9FVE,
+**WSJT-Y** is an independent fork of [WSJT-Z](https://github.com/sq9fve/wsjt-z) by SQ9FVE,
 which is itself a fork of [WSJT-X](https://physics.princeton.edu/pulsar/k1jt/wsjtx.html) by K1JT and the WSJT Development Group.
 
 Maintained by **Daren Loxley — 2E0LXY** (Wakefield, West Yorkshire, UK).
 
 ---
 
-## What is WSJT-Zii?
+## What is WSJT-Y?
 
 WSJT-X is the definitive weak-signal digital-mode application for amateur radio.
 WSJT-Z extended it with automation features (auto-sequencing, QRM protection, multi-threaded FT8 decoding, bandhopping, and more).
-WSJT-Zii takes that foundation further, applying correctness fixes and shipping reproducible CI/CD release builds for Linux (Debian) and Windows.
+WSJT-Y takes that foundation further, applying correctness fixes and shipping reproducible CI/CD release builds for Linux (Debian) and Windows.
 
 This repository is **not connected** to `sq9fve/wsjt-z` and will never auto-merge with it.
 All upstream improvements are reviewed and cherry-picked manually.
@@ -45,12 +45,12 @@ All upstream improvements are reviewed and cherry-picked manually.
 
 ## Releases & Downloads
 
-Latest: [v3.0.0](https://github.com/2E0LXY/wsjt-zii/releases/tag/v3.0.0)
+Latest: [v3.0.0](https://github.com/2E0LXY/wsjt-y/releases/tag/v3.0.0)
 
 | Platform | File | Notes |
 |----------|------|-------|
-| Linux (Debian/Ubuntu 22.04+) | `wsjtz_3.0.0-2.0.16_amd64.deb` | `sudo dpkg -i …; sudo apt-get install -f` |
-| Windows 64-bit | `wsjtz-3.0.0.0-win64.exe` | Run installer, default path `C:\WSJT\wsjtx` |
+| Linux (Debian/Ubuntu 22.04+) | `wsjty_3.0.0-2.0.16_amd64.deb` | `sudo dpkg -i …; sudo apt-get install -f` |
+| Windows 64-bit | `wsjty-3.0.0.0-win64.exe` | Run installer, default path `C:\WSJT\wsjtx` |
 
 ---
 
@@ -81,7 +81,7 @@ Key steps: install MSYS2 packages, pin gcc-fortran to 14.2.0-3, build Hamlib 4.5
 
 ## Licence
 
-WSJT-Zii is distributed under the **GNU General Public Licence v3.0** (GPL-3.0),
+WSJT-Y is distributed under the **GNU General Public Licence v3.0** (GPL-3.0),
 the same licence as WSJT-X and WSJT-Z. See [LICENCE](LICENSE) for full terms.
 
 In short: you may use, modify, and distribute this software freely, provided that
@@ -91,13 +91,13 @@ appropriate attribution to the original authors.
 **Attribution chain:**
 - WSJT-X — © K1JT and the WSJT Development Group
 - WSJT-Z — © SQ9FVE (fork of WSJT-X)
-- WSJT-Zii — © 2E0LXY (fork of WSJT-Z)
+- WSJT-Y — © 2E0LXY (fork of WSJT-Z)
 
 ---
 
 ## Contributing
 
-Issues and pull requests welcome at https://github.com/2E0LXY/wsjt-zii.
+Issues and pull requests welcome at https://github.com/2E0LXY/wsjt-y.
 Please do **not** open pull requests against `sq9fve/wsjt-z` or `kj4xo/wsjtx` on behalf of changes made here.
 
 ---

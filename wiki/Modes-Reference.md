@@ -1,6 +1,6 @@
 # Modes Reference
 
-All modes supported by WSJT-Zii with key parameters and recommended uses.
+All modes supported by WSJT-Y with key parameters and recommended uses.
 
 ---
 
@@ -16,7 +16,7 @@ All modes supported by WSJT-Zii with key parameters and recommended uses.
 | Payload | 77 bits |
 | FEC | (174,91) LDPC |
 | Sensitivity (standard) | −21 dB S/N |
-| Sensitivity (WSJT-Zii high-sens) | −25 dB S/N |
+| Sensitivity (WSJT-Y high-sens) | −25 dB S/N |
 | Shannon limit | −27.5 dB S/N |
 | Typical use | HF DX, 160–2 m |
 
@@ -140,7 +140,7 @@ MSK144 uses very short bursts (72 ms to 900 ms) to catch brief ionisation trails
 | Sensitivity (1800 s) | −40 dB S/N |
 | Typical use | LF/MF/HF very weak signal; WSPR replacement |
 
-FST4W (W = WSPR-like) is a narrowband beacon mode for LF/MF. FST4 supports two-way QSOs with longer T/R periods. The 1800-second period achieves −40 dB — this is the only mode in WSJT-Zii that approaches −40 dB sensitivity, and it requires 30 minutes per QSO.
+FST4W (W = WSPR-like) is a narrowband beacon mode for LF/MF. FST4 supports two-way QSOs with longer T/R periods. The 1800-second period achieves −40 dB — this is the only mode in WSJT-Y that approaches −40 dB sensitivity, and it requires 30 minutes per QSO.
 
 > **Note:** The −40 dB target is only achievable with FST4 1800 s period. FT8 has a hard Shannon limit of −27.5 dB — no algorithm improvement can break this.
 
