@@ -101,6 +101,7 @@ jobs:
             -DCMAKE_PREFIX_PATH=/mingw64 \
             -DWSJT_SKIP_MANPAGES=ON \
             -DWSJT_GENERATE_DOCS=OFF \
+            -DWSJT_BUILD_UTILS=OFF \
             -DWSJT_WITH_OMNIRIG=ON \
             -DOMNIRIG_TLB_PATH="$(cd .. && pwd)/OmniRig.tlb" \
             ..
