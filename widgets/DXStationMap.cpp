@@ -43,6 +43,12 @@ DXStationMap::DXStationMap(QWidget *parent)
     m_clearBtn->setCursor(Qt::ArrowCursor);
     connect(m_clearBtn, &QPushButton::clicked, this, &DXStationMap::clearStations);
 
+    // Animation timer — drives CQ flash + calling-user radar halo
+    m_animTimer = new QTimer(this);
+    m_animTimer->setInterval(500);
+    connect(m_animTimer, &QTimer::timeout, this, [this]{ ++m_animFrame; update(); });
+    m_animTimer->start();
+
     // ── QRZ photo label (info panel) ─────────────────────────────────────────
     m_photoLbl = new QLabel(this);
     m_photoLbl->setFixedSize(80, 80);
@@ -73,6 +79,8 @@ void DXStationMap::onQrzResult(QrzRecord const& r)
     update();
 }
 
+void DXStationMap::setMyCall(QString const& call) { m_myCall = call.toUpper(); }
+
 void DXStationMap::setHomeGrid(QString const& grid)
 {
     m_homeGrid = grid.toUpper().left(6);
@@ -102,8 +110,24 @@ void DXStationMap::clearStations()
 
 void DXStationMap::addStation(PlottedStation const& s)
 {
+    if (!s.grid.isEmpty()) m_callGrid[s.call] = s.grid;  // cache for all-calls plotting
     for (auto &e : m_stations) if (e.call==s.call) { e=s; update(); return; }
     m_stations.append(s);
+    update();
+}
+
+// Try to plot a callsign that appeared in a non-CQ message using cached grid
+void DXStationMap::tryAddCallsign(QString const& call, int freqHz, int snr, bool forMe)
+{
+    if (call.isEmpty()) return;
+    // Already on map?
+    for (auto const& s : m_stations) if (s.call==call) return;
+    // Have cached grid?
+    if (!m_callGrid.contains(call)) return;
+    PlottedStation ps;
+    ps.call=call; ps.grid=m_callGrid[call]; ps.freqHz=freqHz;
+    ps.snr=snr; ps.period=m_currentPeriod; ps.isCQ=false; ps.forMe=forMe;
+    m_stations.append(ps);
     update();
 }
 
@@ -119,9 +143,13 @@ void DXStationMap::expireStations(int currentPeriod, int maxAge)
 QPointF DXStationMap::project(double lon, double lat) const
 {
     const int mapH = height() - INFO_H;
-    const double x = (lon+180.0)/360.0 * width();
-    const double y = (90.0-lat)/180.0  * mapH;
-    return {x, y};
+    const int w = width();
+    // Apply zoom centred on m_panLon/m_panLat
+    const double cx = (m_panLon + 180.0) / 360.0 * w;
+    const double cy = (90.0 - m_panLat) / 180.0  * mapH;
+    const double x  = (lon + 180.0) / 360.0 * w;
+    const double y  = (90.0 - lat)  / 180.0  * mapH;
+    return { cx + (x - cx) * m_zoom, cy + (y - cy) * m_zoom };
 }
 
 bool DXStationMap::gridToLatLon(QString const& grid, double &lat, double &lon) const
@@ -339,17 +367,51 @@ void DXStationMap::paintEvent(QPaintEvent *)
             drawGridSquare(p,m_selGrid,QColor(77,166,255,60),QColor(100,200,255),2);
     }
 
-    // All station dots
-    const double dotR=qMax(2.0,cellW*0.10);
-    p.setRenderHint(QPainter::Antialiasing,true);
-    for (auto const& s:m_stations) {
-        if (s.call==m_selCall) continue;
-        double lat,lon; if (!gridToLatLon(s.grid,lat,lon)) continue;
-        QColor col=s.forMe?QColor(80,220,120,220):s.isCQ?QColor(80,160,255,220):QColor(90,110,150,170);
-        const QPointF pt=project(lon,lat);
-        p.setBrush(col); p.setPen(Qt::NoPen); p.drawEllipse(pt,dotR,dotR);
+    // All station dots with animation
+    const double dotR = qMax(3.0, cellW * 0.12);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    const bool animOn = (m_animFrame & 1);   // toggles every 500ms
+
+    for (auto const& s : m_stations) {
+        if (s.call == m_selCall) continue;
+        double lat, lon;
+        if (!gridToLatLon(s.grid, lat, lon)) continue;
+        const QPointF pt = project(lon, lat);
+
+        if (s.forMe) {
+            // ── Calling ME: red + pulsing radar halo ──────────────────────────
+            if (animOn) {
+                // Outer radar ring (expands on alternate frames)
+                p.setBrush(Qt::NoBrush);
+                p.setPen(QPen(QColor(255,60,60,120), 1));
+                p.drawEllipse(pt, dotR*3.5, dotR*3.5);
+                p.setPen(QPen(QColor(255,80,80,60), 1));
+                p.drawEllipse(pt, dotR*5, dotR*5);
+            }
+            p.setPen(Qt::NoPen);
+            p.setBrush(animOn ? QColor(255,80,80) : QColor(220,40,40));
+            p.drawEllipse(pt, dotR*1.4, dotR*1.4);
+            // White call label
+            p.setFont(QFont("Courier New", 8, QFont::Bold));
+            p.setPen(QColor(255,200,200));
+            p.drawText(QPointF(pt.x()+dotR*1.5, pt.y()-4), s.call.left(12));
+
+        } else if (s.isCQ) {
+            // ── CQ: blue, flashing brightness ─────────────────────────────────
+            const QColor col = animOn ? QColor(80,180,255,240) : QColor(50,120,200,180);
+            p.setBrush(col); p.setPen(Qt::NoPen);
+            p.drawEllipse(pt, dotR, dotR);
+            p.setFont(QFont("Courier New", 7));
+            p.setPen(QColor(160,210,255));
+            p.drawText(QPointF(pt.x()+dotR+2, pt.y()-3), s.call.left(10));
+
+        } else {
+            // ── Other directed messages ────────────────────────────────────────
+            p.setBrush(QColor(90,110,150,160)); p.setPen(Qt::NoPen);
+            p.drawEllipse(pt, dotR*0.85, dotR*0.85);
+        }
     }
-    p.setRenderHint(QPainter::Antialiasing,false);
+    p.setRenderHint(QPainter::Antialiasing, false);
 
     // Arc + markers
     if (!m_selGrid.isEmpty()&&!m_homeGrid.isEmpty())
@@ -363,6 +425,21 @@ void DXStationMap::paintEvent(QPaintEvent *)
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
+void DXStationMap::wheelEvent(QWheelEvent *e)
+{
+    const double delta = e->angleDelta().y() > 0 ? 1.25 : 0.80;
+    m_zoom = qBound(1.0, m_zoom * delta, 8.0);
+    if (m_zoom < 1.01) { m_panLon = 0.0; m_panLat = 20.0; }  // reset pan at world view
+    else {
+        // Pan to keep clicked point under cursor
+        const int mapH = height() - INFO_H;
+        const double w = width();
+        m_panLon = (e->position().x() / w) * 360.0 - 180.0;
+        m_panLat = 90.0 - (e->position().y() / mapH) * 180.0;
+    }
+    update();
+}
+
 void DXStationMap::resizeEvent(QResizeEvent *e)
 {
     QWidget::resizeEvent(e);

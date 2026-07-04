@@ -3,6 +3,7 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QXmlStreamReader>
+#include <QDebug>
 
 constexpr char QRZLookup::URL[];
 
@@ -21,16 +22,28 @@ void QRZLookup::startSession()
     QUrlQuery q;
     q.addQueryItem("username", m_user);
     q.addQueryItem("password", m_pass);
-    q.addQueryItem("agent",    "WSJT-Y");
+    q.addQueryItem("agent",    "WSJT-Y-3.2");
     url.setQuery(q);
-    m_sessionNam.get(QNetworkRequest{url});
+    QNetworkRequest req{url};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "WSJT-Y");
+    m_sessionNam.get(req);
 }
 
 void QRZLookup::onSessionReply(QNetworkReply *reply)
 {
     reply->deleteLater();
-    if (reply->error() != QNetworkReply::NoError) return;
-    m_sessionKey = tagText(reply->readAll(), "Key");
+    if (reply->error() != QNetworkReply::NoError) {
+        qDebug() << "QRZ session error:" << reply->errorString();
+        return;
+    }
+    const auto data = reply->readAll();
+    m_sessionKey = tagText(data, "Key");
+    if (m_sessionKey.isEmpty()) {
+        const auto err = tagText(data, "Error");
+        qDebug() << "QRZ session failed:" << err;
+        return;
+    }
+    qDebug() << "QRZ session key obtained, pending call:" << m_pendingCall;
     if (!m_pendingCall.isEmpty()) {
         auto c = m_pendingCall; m_pendingCall.clear(); lookup(c);
     }
@@ -38,27 +51,41 @@ void QRZLookup::onSessionReply(QNetworkReply *reply)
 
 void QRZLookup::lookup(QString const& call)
 {
-    if (m_user.isEmpty()) return;   // no credentials configured
+    if (m_user.isEmpty() || call.isEmpty()) return;
     if (m_sessionKey.isEmpty()) { m_pendingCall = call; startSession(); return; }
     QUrl url{URL};
     QUrlQuery q;
     q.addQueryItem("s",        m_sessionKey);
     q.addQueryItem("callsign", call.toUpper());
     url.setQuery(q);
-    m_lookupNam.get(QNetworkRequest{url});
+    QNetworkRequest req{url};
+    req.setHeader(QNetworkRequest::UserAgentHeader, "WSJT-Y");
+    m_lookupNam.get(req);
 }
 
 void QRZLookup::onLookupReply(QNetworkReply *reply)
 {
     reply->deleteLater();
-    if (reply->error() != QNetworkReply::NoError) return;
+    if (reply->error() != QNetworkReply::NoError) {
+        qDebug() << "QRZ lookup error:" << reply->errorString();
+        return;
+    }
+    const auto data = reply->readAll();
+
+    // Session expiry
+    if (tagText(data,"Error").contains("Session")) {
+        m_sessionKey.clear();
+        if (!m_pendingCall.isEmpty()) { auto c=m_pendingCall; m_pendingCall.clear(); lookup(c); }
+        return;
+    }
 
     QrzRecord r;
-    QXmlStreamReader xml{reply->readAll()};
-    while (!xml.atEnd()) {
-        if (xml.readNextStartElement()) {
-            auto tag = xml.name().toString();
-            if (tag=="call")    r.call    = xml.readElementText();
+    QXmlStreamReader xml{data};
+    while (!xml.atEnd() && !xml.hasError()) {
+        auto tok = xml.readNext();
+        if (tok == QXmlStreamReader::StartElement) {
+            const auto tag = xml.name().toString();
+            if      (tag=="call")    r.call    = xml.readElementText();
             else if (tag=="fname")   r.fname   = xml.readElementText();
             else if (tag=="name")    r.name    = xml.readElementText();
             else if (tag=="addr1")   r.addr1   = xml.readElementText();
@@ -70,15 +97,20 @@ void QRZLookup::onLookupReply(QNetworkReply *reply)
             else if (tag=="email")   r.email   = xml.readElementText();
             else if (tag=="bio")     r.bio     = xml.readElementText();
             else if (tag=="image")   r.imageUrl= QUrl{xml.readElementText()};
-            else if (tag=="Error") { xml.skipCurrentElement(); r.valid=false; return; }
+            else if (tag=="Error")   { qDebug()<<"QRZ callsign error:"<<xml.readElementText(); return; }
         }
     }
     r.valid = !r.call.isEmpty();
-    if (r.valid && r.imageUrl.isValid()) {
-        // Fetch photo separately
-        m_photoNam.get(QNetworkRequest{r.imageUrl});
+    if (!r.valid) return;
+
+    qDebug() << "QRZ record:" << r.call << r.fname << r.name << r.country;
+
+    if (r.imageUrl.isValid() && !r.imageUrl.isEmpty()) {
+        QNetworkRequest req{r.imageUrl};
+        req.setHeader(QNetworkRequest::UserAgentHeader,"WSJT-Y");
+        m_photoNam.get(req);
         m_pendingRecord = r;
-    } else if (r.valid) {
+    } else {
         emit lookupResult(r);
     }
 }
@@ -95,8 +127,10 @@ void QRZLookup::onPhotoReply(QNetworkReply *reply)
 QString QRZLookup::tagText(QByteArray const& data, QString const& tag)
 {
     QXmlStreamReader xml{data};
-    while (!xml.atEnd())
-        if (xml.readNextStartElement() && xml.name().toString() == tag)
+    while (!xml.atEnd() && !xml.hasError()) {
+        if (xml.readNext() == QXmlStreamReader::StartElement
+                && xml.name().toString() == tag)
             return xml.readElementText();
+    }
     return {};
 }

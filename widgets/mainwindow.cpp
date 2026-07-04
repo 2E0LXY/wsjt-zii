@@ -690,6 +690,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   // Set home grid square from configuration (deferred — config not fully loaded yet)
   if (!m_config.my_grid().isEmpty())
       m_dxMap->setHomeGrid(m_config.my_grid());
+  m_dxMap->setMyCall(m_config.my_callsign());
 
   // Click a station dot on the map → tune Rx and populate DX call/grid fields
   connect(m_dxMap, &DXStationMap::stationClicked,
@@ -1391,6 +1392,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_wideGraph->setVHF(m_config.enable_VHF_features());
   if (m_dxMap && !m_config.my_grid().isEmpty())
       m_dxMap->setHomeGrid(m_config.my_grid());
+  if (m_dxMap) m_dxMap->setMyCall(m_config.my_callsign());
 
   connect( wsprNet, SIGNAL(uploadStatus(QString)), this, SLOT(uploadResponse(QString)));
 
@@ -1866,8 +1868,11 @@ void MainWindow::readSettings()
       m_dxMapDock->show();
     }
   }
+  // Restore previous DX call/grid — suppress map updates during init
+  m_dxMapInitDone = false;
   ui->dxCallEntry->setText (m_settings->value ("DXcall", QString {}).toString ());
   ui->dxGridEntry->setText (m_settings->value ("DXgrid", QString {}).toString ());
+  m_dxMapInitDone = true;
   m_path = m_settings->value("MRUdir", m_config.save_directory ().absolutePath ()).toString ();
   m_txFirst = m_settings->value("TxFirst",false).toBool();
   m_autoCQAlternateEvenOddNext = !m_txFirst;
@@ -5831,6 +5836,9 @@ void MainWindow::readFromStdout()                             //readFromStdout
               ps.isCQ = isCQ; ps.forMe = forMe;
               if (!ps.grid.isEmpty())
                 m_dxMap->addStation(ps);
+              else
+                // Try to plot using cached grid from previous CQ decode
+                m_dxMap->tryAddCallsign(deCall, decodedtext.frequencyOffset(), 0, forMe);
             }
 
     QString rawViewLine;
@@ -6113,7 +6121,7 @@ void MainWindow::readFromStdout()                             //readFromStdout
                   m_bDoubleClicked=true;
                   ui->dxCallEntry->setText(deCall);
                   // Update DX Station Map to show the clicked callsign's location
-                  if (m_dxMap && !deGrid.isEmpty()) {
+                  if (m_dxMap && !deGrid.isEmpty() && m_dxMapInitDone) {
                     m_dxMap->showStation(deCall, deGrid, 0,
                                          !decodedtext.CQersCall().isEmpty(), false);
                   }
@@ -7273,7 +7281,11 @@ void MainWindow::guiUpdate()
     }
 
     if(m_mode=="FST4") chk_FST4_freq_range();
+    const QString prevBand = m_currentBand;
     m_currentBand=m_config.bands()->find(m_freqNominal);
+    // Clear DX map when band changes
+    if (m_dxMap && m_currentBand != prevBand && !prevBand.isEmpty())
+        m_dxMap->clearStations();
     // Z
     /*
     if( SpecOp::HOUND == m_specOp ) {

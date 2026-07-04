@@ -717,41 +717,60 @@ void CPlotter::DrawOverlay()                   //DrawOverlay()
   }
 
   // Callsign overlay labels drawn onto m_DialOverlayPixmap via overPainter.
-  // m_DialOverlayPixmap is drawn at widget y=30 (top of waterfall).
-  // overlay y=18 → widget y=48 — just inside the waterfall, below the scale strip.
-  // Label prefix: "CQ:"=blue, "ME:"=green, plain=grey.
+  // Waterfall callsign overlay.
+  // "CQ:" = blue bg + white text
+  // "ME:" = flashing red bg + white text (calling my station)
+  // plain  = dark bg + grey text (other directed)
   if(m_bShowDecodeLabels && !m_decodeLabels.isEmpty()) {
     QFont lf = overPainter.font();
     lf.setPointSize(7);
-    lf.setBold(false);
+    lf.setBold(true);
     overPainter.setFont(lf);
     QFontMetrics fm(lf);
+    const bool flashOn = (QTime::currentTime().msec() < 500);  // 1Hz flash for ME labels
+
     for(auto const& pair : m_decodeLabels) {
       int fx = XfromFreq(float(pair.first));
       if(fx < 0 || fx > m_w) continue;
       QString raw = pair.second.trimmed();
-      QColor textColor;
+      QColor bgColor, textColor;
       QString label;
+      bool flash = false;
+
       if(raw.startsWith("CQ:")) {
-        label = raw.mid(3).left(10);
-        textColor = QColor(100, 180, 255);   // blue — CQ/calling station
+        label     = raw.mid(3).left(10);
+        bgColor   = QColor(0, 80, 180, 200);    // deep blue background
+        textColor = QColor(255, 255, 255);       // white text
       } else if(raw.startsWith("ME:")) {
-        label = raw.mid(3).left(10);
-        textColor = QColor(100, 255, 130);   // green — directed at my call
+        label     = raw.mid(3).left(10);
+        bgColor   = flashOn ? QColor(200,20,20,220) : QColor(120,10,10,180);  // flashing red
+        textColor = QColor(255, 255, 255);
+        flash     = true;
       } else {
-        label = raw.left(10);
-        textColor = QColor(200, 200, 200);   // grey — other directed
+        label     = raw.left(10);
+        bgColor   = QColor(10, 20, 35, 160);
+        textColor = QColor(160, 170, 190);
       }
+
       QRect textRect = fm.boundingRect(label);
       int tx = qBound(0, fx - textRect.width()/2, m_w - textRect.width());
-      int ty = 18;   // in overlay coords; overlay drawn at widget y=30, so label at widget y=48
-      // semi-transparent background pill
-      overPainter.setPen(Qt::NoPen);
-      overPainter.setBrush(QColor(0,0,0,160));
-      overPainter.drawRoundedRect(tx-2, ty-textRect.height(), textRect.width()+4, textRect.height()+2, 2, 2);
-      // label text
+      int ty = 20;
+
+      // Background pill — taller for ME labels
+      const int padV = flash ? 3 : 2;
+      overPainter.setPen(flash ? QPen(QColor(255,80,80,180),1) : Qt::NoPen);
+      overPainter.setBrush(bgColor);
+      overPainter.drawRoundedRect(tx-3, ty-textRect.height()-padV,
+                                  textRect.width()+6, textRect.height()+padV*2, 3, 3);
+      // Label text
       overPainter.setPen(textColor);
       overPainter.drawText(tx, ty, label);
+
+      // Tick mark down to frequency line for ME labels
+      if(flash) {
+        overPainter.setPen(QPen(QColor(255,100,100,160),1));
+        overPainter.drawLine(fx, ty+2, fx, ty+14);
+      }
     }
   }
 }

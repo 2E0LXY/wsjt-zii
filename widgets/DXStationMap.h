@@ -7,6 +7,9 @@
 #include <QPointF>
 #include <QPixmap>
 #include <QPushButton>
+#include <QTimer>
+#include <QMap>
+#include <QWheelEvent>
 #include <QLabel>
 #include <QMenu>
 #include "../qrzlookup.h"
@@ -29,6 +32,8 @@ public:
                      bool isCQ = false, bool forMe = false);
     void clearStations();
     void addStation(PlottedStation const& s);
+    void tryAddCallsign(QString const& call, int freqHz, int snr, bool forMe);
+    void setMyCall(QString const& call);
     void expireStations(int currentPeriod, int maxAge = 20);
     void setQrzLookup(QRZLookup *qrz);   // pass in from mainwindow if configured
 
@@ -70,6 +75,21 @@ private:
     QPixmap   m_worldMap;
     QrzRecord m_qrzData;
     QRZLookup *m_qrz = nullptr;
+
+
+    // ── Zoom / pan ────────────────────────────────────────────────────────────
+    void wheelEvent(QWheelEvent *e) override;
+    double  m_zoom = 1.0;              // 1.0 = world view; up to 8.0
+    double  m_panLon = 0.0;            // centre longitude
+    double  m_panLat = 20.0;           // centre latitude
+
+    // ── Animation ─────────────────────────────────────────────────────────────
+    QTimer *m_animTimer = nullptr;
+    int     m_animFrame = 0;           // increments every 500ms
+    QString m_myCall;                  // used to detect "calling me"
+
+    // ── Callsign→grid cache (so ALL calls can be plotted) ────────────────────
+    QMap<QString,QString> m_callGrid;  // call → 4-char grid, built from CQ decodes
 
     // ── Overlay widgets ───────────────────────────────────────────────────────
     QPushButton *m_clearBtn = nullptr;

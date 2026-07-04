@@ -782,6 +782,7 @@ private:
   DXStationMap *m_dxMap = nullptr;
   QDockWidget  *m_dxMapDock = nullptr;
   int           m_dxMapPeriod = 0;
+  bool          m_dxMapInitDone = false;  // suppress map updates during startup restore
   VersionChecker *m_versionChecker = nullptr;
   QPushButton    *m_updateBadge = nullptr;
   QTimer         *m_flashTimer = nullptr;
