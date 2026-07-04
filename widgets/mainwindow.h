@@ -768,6 +768,7 @@ private:
   QScopedPointer<UnfilteredView> m_unfilteredView;
   QScopedPointer<PSKReporterWidget> m_pskReporterView;
   QSet<QString> m_pskReporterReceivers;
+  QSet<QString> m_periodDecodes;  // (freq+msg) dedup for current T/R period
   QThread * m_pskReporterThread;
   QDateTime m_ignoreListReset;
   QDateTime m_watchdogAnchorUtc;
@@ -777,6 +778,7 @@ private:
   void updateWaterfallCallsigns();
   DXStationMap *m_dxMap = nullptr;
   QDockWidget  *m_dxMapDock = nullptr;
+  int           m_dxMapPeriod = 0;   // increments every T/R period; drives station expiry
   bool m_savedAutoCQfiltering = false;
   bool m_savedProcessTailenders = false;
   bool m_savedAutoCQfilteringValid = false;

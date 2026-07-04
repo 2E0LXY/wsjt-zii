@@ -6,12 +6,14 @@
 #include <QList>
 #include <QPointF>
 #include <QPixmap>
+#include <QPushButton>
 
 struct PlottedStation {
     QString call;
     QString grid;
     int     snr = 0;
-    int     freqHz = 0;   // audio Hz — used for click-to-tune
+    int     freqHz = 0;
+    int     period = 0;   // T/R period counter — for rolling expiry
     bool    isCQ = false;
     bool    forMe = false;
 };
@@ -28,6 +30,7 @@ public:
                      bool isCQ = false, bool forMe = false);
     void clearStations();
     void addStation(PlottedStation const& s);
+    void expireStations(int currentPeriod, int maxAge = 20);
 
 signals:
     void stationClicked(QString call, int freqHz, QString grid);
@@ -46,7 +49,9 @@ private:
     int       m_selSNR = 0, m_selFreqHz = 0;
     double    m_selLat = 0.0, m_selLon = 0.0;
     QList<PlottedStation> m_stations;
-    QPixmap   m_worldMap;
+    int m_currentPeriod = 0;
+    QPixmap      m_worldMap;
+    QPushButton *m_clearBtn = nullptr;
 
     QPointF project(double lon, double lat) const;
     bool    gridToLatLon(QString const& grid, double &lat, double &lon) const;

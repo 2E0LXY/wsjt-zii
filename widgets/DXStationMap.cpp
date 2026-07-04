@@ -14,8 +14,18 @@ DXStationMap::DXStationMap(QWidget *parent)
     setMinimumSize(280, 200);
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    // Load photorealistic world map background from Qt resources
     m_worldMap.load(":/worldmap.jpg");
+
+    // Clear button — overlaid top-right corner
+    m_clearBtn = new QPushButton(QChar(0x2715) + QString(" Clear"), this);
+    m_clearBtn->setFixedSize(62, 18);
+    m_clearBtn->setStyleSheet(
+        "QPushButton{background:#0a1828;border:1px solid #1a4060;"
+        "color:#6090b0;font-size:9px;border-radius:2px;padding:0px 4px;}"
+        "QPushButton:hover{background:#0d2840;color:#00c8ff;border-color:#0080b0;}");
+    m_clearBtn->setCursor(Qt::ArrowCursor);
+    m_clearBtn->move(width() - 66, 2);
+    connect(m_clearBtn, &QPushButton::clicked, this, &DXStationMap::clearStations);
 }
 
 void DXStationMap::setHomeGrid(QString const& grid)
@@ -308,6 +318,7 @@ void DXStationMap::paintEvent(QPaintEvent *)
 void DXStationMap::resizeEvent(QResizeEvent *e)
 {
     QWidget::resizeEvent(e);
+    if (m_clearBtn) m_clearBtn->move(width() - 66, 2);
     update();
 }
 
@@ -362,4 +373,13 @@ void DXStationMap::mousePressEvent(QMouseEvent *e)
 void DXStationMap::mouseDoubleClickEvent(QMouseEvent *)
 {
     clearStations();
+}
+
+void DXStationMap::expireStations(int currentPeriod, int maxAge)
+{
+    m_currentPeriod = currentPeriod;
+    for (int i = m_stations.size()-1; i >= 0; --i)
+        if ((currentPeriod - m_stations[i].period) > maxAge)
+            m_stations.removeAt(i);
+    update();
 }

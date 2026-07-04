@@ -5040,6 +5040,9 @@ void MainWindow::decodeDone ()
     // All decodes for this period are in the cache — push to the waterfall overlay
     updateWaterfallCallsigns();
     m_decodesLabelCache.clear();  // ready for next period
+    m_periodDecodes.clear();       // reset per-period dedup
+    // Roll the map — expire stations older than 20 T/R periods (~10 min FT8)
+    if (m_dxMap) m_dxMap->expireStations(++m_dxMapPeriod, 20);
     // DX Map: don't clear every T/R period — accumulate stations so the map
     // builds a useful picture. addStation() deduplicates by callsign.
     // User double-clicks the map widget to manually clear.
@@ -5762,6 +5765,7 @@ void MainWindow::readFromStdout()                             //readFromStdout
               PlottedStation ps;
               ps.call = deCall; ps.grid = grid.trimmed().left(4);
               ps.snr = 0; ps.freqHz = decodedtext.frequencyOffset();
+              ps.period = m_dxMapPeriod;
               ps.isCQ = isCQ; ps.forMe = forMe;
               if (!ps.grid.isEmpty())
                 m_dxMap->addStation(ps);
@@ -5878,6 +5882,16 @@ void MainWindow::readFromStdout()                             //readFromStdout
               // leading "? ", and Q65 "q1..q9[0-9*]?") before display. Anchored on a
               // leading whitespace + word boundary so we do NOT mangle callsigns that
               // happen to contain "a1".."a9" as a substring (e.g., PA1ABC, LA2XYZ).
+                // ── Per-period deduplication ──────────────────────────────────────────
+                // FT8 two-pass decoding (zhsym=49 + zhsym=50) can emit identical lines
+                // for the same signal. Gate on (freq, message) to suppress the second.
+                {
+                  const QString dedupeKey = QString("%1|%2")
+                      .arg(decodedtext.frequencyOffset())
+                      .arg(decodedtext.clean_string().trimmed());
+                  if (m_periodDecodes.contains(dedupeKey)) goto skip_band_activity_display;
+                  m_periodDecodes.insert(dedupeKey);
+                }
                 if (!m_bandActivityRawView) {
                   if (ui->actionHide_AP_info->isVisible() && ui->actionHide_AP_info->isChecked()) {
                     static QRegularExpression const kReAP {
@@ -5907,6 +5921,7 @@ void MainWindow::readFromStdout()                             //readFromStdout
                     ui->decodedTextBrowser->highlight_callsign(ui->dxCallEntry->text(), QColor(255,0,0), QColor(255,255,255), true);
                   }
                 }
+                skip_band_activity_display: ;
 
           }
 
