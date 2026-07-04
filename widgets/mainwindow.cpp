@@ -710,15 +710,19 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
     }
   });
 
-  // QRZ XML lookup — optional; only starts if credentials are in settings
-  {
-    const QString qrzUser = m_settings->value("qrzUser", "").toString();
-    const QString qrzPass = m_settings->value("qrzPass", "").toString();
-    if (!qrzUser.isEmpty()) {
-        auto *qrz = new QRZLookup(qrzUser, qrzPass, this);
+  // QRZ XML lookup — reads from Settings → WSJT-Y → QRZ.COM tab
+  auto startQrz = [this]() {
+    const QString u = m_config.qrzComUn(), pw = m_config.qrzComPw();
+    if (!u.isEmpty()) {
+        auto *qrz = new QRZLookup(u, pw, this);
         m_dxMap->setQrzLookup(qrz);
     }
-  }
+  };
+  startQrz();
+  connect(&m_config, &Configuration::qrz_config_changed, this, [this, startQrz](){
+    m_dxMap->setQrzLookup(nullptr);
+    startQrz();
+  });
 
   // ── Auto-updater ─────────────────────────────────────────────────────────
   m_versionChecker = new VersionChecker(QStringLiteral(VERSION_Z), this);
