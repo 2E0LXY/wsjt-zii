@@ -1,31 +1,76 @@
 #include "DXStationMap.h"
 #include <QPainter>
 #include <QPainterPath>
-#include <QResizeEvent>
 #include <QMouseEvent>
+#include <QFontMetrics>
 #include <QToolTip>
 #include <cmath>
 
 static constexpr double DEG = M_PI / 180.0;
 
 DXStationMap::DXStationMap(QWidget *parent)
-  : QWidget(parent)
+    : QWidget(parent)
 {
-    setMinimumSize(280, 200);
+    setMinimumSize(280, 260);
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_worldMap.load(":/worldmap.jpg");
 
-    // Clear button — overlaid top-right corner
-    m_clearBtn = new QPushButton(QChar(0x2715) + QString(" Clear"), this);
-    m_clearBtn->setFixedSize(62, 18);
+    // ── Hamburger — dock position (works when floating too) ──────────────────
+    m_menuBtn = new QPushButton("⋮", this);
+    m_menuBtn->setFixedSize(22, 22);
+    m_menuBtn->setStyleSheet(
+        "QPushButton{background:#0a1828;border:1px solid #1a4060;color:#4a8ab0;"
+        "font-size:14px;font-weight:bold;border-radius:3px;padding:0;}"
+        "QPushButton:hover{background:#0d2840;color:#00c8ff;}");
+    m_menuBtn->setCursor(Qt::ArrowCursor);
+    m_menuBtn->move(2, 2);
+    connect(m_menuBtn, &QPushButton::clicked, this, [this]() {
+        QMenu m;
+        m.addAction(tr("Pin Left"),  [this]{ emit pinRequested(Qt::LeftDockWidgetArea);  });
+        m.addAction(tr("Pin Right"), [this]{ emit pinRequested(Qt::RightDockWidgetArea); });
+        m.addAction(tr("Float"),     [this]{ emit pinRequested(Qt::NoDockWidgetArea);    });
+        m.exec(QCursor::pos());
+    });
+
+    // ── Clear button ─────────────────────────────────────────────────────────
+    m_clearBtn = new QPushButton(QString(QChar(0x2715)) + " Clear", this);
+    m_clearBtn->setFixedSize(62, 20);
     m_clearBtn->setStyleSheet(
-        "QPushButton{background:#0a1828;border:1px solid #1a4060;"
-        "color:#6090b0;font-size:9px;border-radius:2px;padding:0px 4px;}"
-        "QPushButton:hover{background:#0d2840;color:#00c8ff;border-color:#0080b0;}");
+        "QPushButton{background:#0a1828;border:1px solid #1a4060;color:#5090b0;"
+        "font-size:9px;border-radius:3px;}"
+        "QPushButton:hover{background:#0d2840;color:#00c8ff;}");
     m_clearBtn->setCursor(Qt::ArrowCursor);
-    m_clearBtn->move(width() - 66, 2);
     connect(m_clearBtn, &QPushButton::clicked, this, &DXStationMap::clearStations);
+
+    // ── QRZ photo label (info panel) ─────────────────────────────────────────
+    m_photoLbl = new QLabel(this);
+    m_photoLbl->setFixedSize(80, 80);
+    m_photoLbl->setStyleSheet("border:1px solid #1a4060;background:#050c18;");
+    m_photoLbl->setScaledContents(true);
+    m_photoLbl->setAlignment(Qt::AlignCenter);
+    m_photoLbl->setVisible(false);
+
+    qRegisterMetaType<QrzRecord>("QrzRecord");
+}
+
+void DXStationMap::setQrzLookup(QRZLookup *qrz)
+{
+    m_qrz = qrz;
+    if (m_qrz) connect(m_qrz, &QRZLookup::lookupResult,
+                        this, &DXStationMap::onQrzResult);
+}
+
+void DXStationMap::onQrzResult(QrzRecord const& r)
+{
+    m_qrzData = r;
+    if (!r.photo.isNull()) {
+        m_photoLbl->setPixmap(r.photo);
+        m_photoLbl->setVisible(true);
+        const int mapH = height() - INFO_H;
+        m_photoLbl->move(6, mapH + 6);
+    }
+    update();
 }
 
 void DXStationMap::setHomeGrid(QString const& grid)
@@ -35,351 +80,336 @@ void DXStationMap::setHomeGrid(QString const& grid)
     update();
 }
 
-void DXStationMap::showStation(QString const& call, QString const& grid,
-                                int snr, bool isCQ, bool forMe)
+void DXStationMap::showStation(QString const& call, QString const& grid, int snr,
+                                bool /*isCQ*/, bool /*forMe*/)
 {
-    m_selCall = call;
-    m_selGrid = grid.toUpper().left(4);
-    m_selSNR  = snr;
+    m_selCall = call; m_selGrid = grid.toUpper().left(4); m_selSNR = snr;
     gridToLatLon(m_selGrid, m_selLat, m_selLon);
-    // freqHz updated by addStation when the same callsign exists
-    for (auto const& s : m_stations)
-        if (s.call == call) { m_selFreqHz = s.freqHz; break; }
-
-    PlottedStation s;
-    s.call = call; s.grid = m_selGrid; s.snr = snr; s.isCQ = isCQ; s.forMe = forMe;
-    for (auto &existing : m_stations)
-        if (existing.call == call) { existing = s; update(); return; }
-    m_stations.append(s);
+    for (auto const& s : m_stations) if (s.call==call) { m_selFreqHz=s.freqHz; break; }
+    // Reset QRZ data + photo for new station
+    m_qrzData = QrzRecord{};
+    m_photoLbl->setVisible(false);
+    if (m_qrz && !call.isEmpty()) m_qrz->lookup(call);
     update();
 }
 
 void DXStationMap::clearStations()
 {
-    m_stations.clear();
-    m_selCall.clear();
+    m_stations.clear(); m_selCall.clear(); m_qrzData=QrzRecord{};
+    m_photoLbl->setVisible(false);
     update();
 }
 
 void DXStationMap::addStation(PlottedStation const& s)
 {
-    for (auto &e : m_stations) if (e.call == s.call) { e = s; update(); return; }
+    for (auto &e : m_stations) if (e.call==s.call) { e=s; update(); return; }
     m_stations.append(s);
     update();
-}
-
-// Map a (lon, lat) pair to widget pixel coordinates.
-// Flat equirectangular projection — simple but familiar for ham radio use.
-QPointF DXStationMap::project(double lon, double lat) const
-{
-    const int h = height(), w = width();
-    // Leave a 14px info bar at the bottom
-    const int mapH = h - 14;
-    const double x = (lon + 180.0) / 360.0 * w;
-    const double y = (90.0 - lat) / 180.0 * mapH;
-    return {x, y};
-}
-
-bool DXStationMap::gridToLatLon(QString const& grid, double &lat, double &lon) const
-{
-    if (grid.length() < 2) return false;
-    const auto g = grid.toUpper();
-    lon = (g[0].unicode() - 'A') * 20.0 - 180.0;
-    lat = (g[1].unicode() - 'A') * 10.0 - 90.0;
-    if (g.length() >= 4) {
-        lon += (g[2].unicode() - '0') * 2.0;
-        lat += (g[3].unicode() - '0') * 1.0;
-    }
-    lon += (g.length() >= 4) ? 1.0 : 10.0;
-    lat += (g.length() >= 4) ? 0.5 : 5.0;
-    return true;
-}
-
-double DXStationMap::haversineKm(double lat1, double lon1,
-                                  double lat2, double lon2) const
-{
-    const double R = 6371.0;
-    const double dLat = (lat2 - lat1) * DEG;
-    const double dLon = (lon2 - lon1) * DEG;
-    const double a = std::sin(dLat/2)*std::sin(dLat/2)
-                   + std::cos(lat1*DEG)*std::cos(lat2*DEG)
-                   * std::sin(dLon/2)*std::sin(dLon/2);
-    return R * 2.0 * std::atan2(std::sqrt(a), std::sqrt(1-a));
-}
-
-double DXStationMap::bearingDeg(double lat1, double lon1,
-                                 double lat2, double lon2) const
-{
-    const double y = std::sin((lon2-lon1)*DEG) * std::cos(lat2*DEG);
-    const double x = std::cos(lat1*DEG)*std::sin(lat2*DEG)
-                   - std::sin(lat1*DEG)*std::cos(lat2*DEG)*std::cos((lon2-lon1)*DEG);
-    return std::fmod(std::atan2(y,x)/DEG + 360.0, 360.0);
-}
-
-void DXStationMap::drawGridSquare(QPainter &p, QString const& grid,
-                                   QColor fill, QColor stroke, int strokeW) const
-{
-    if (grid.length() < 2) return;
-    const auto g = grid.toUpper();
-    double lon0, lat0, lon1, lat1;
-    lon0 = (g[0].unicode()-'A') * 20.0 - 180.0;
-    lat0 = (g[1].unicode()-'A') * 10.0 - 90.0;
-    if (g.length() >= 4) {
-        lon0 += (g[2].unicode()-'0') * 2.0;
-        lat0 += (g[3].unicode()-'0') * 1.0;
-        lon1 = lon0 + 2.0; lat1 = lat0 + 1.0;
-    } else {
-        lon1 = lon0 + 20.0; lat1 = lat0 + 10.0;
-    }
-    const QPointF tl = project(lon0, lat1);
-    const QPointF br = project(lon1, lat0);
-    p.setBrush(fill);
-    p.setPen(QPen(stroke, strokeW));
-    p.drawRect(QRectF(tl, br));
-}
-
-void DXStationMap::drawArc(QPainter &p, double lat1, double lon1,
-                            double lat2, double lon2) const
-{
-    // Approximate great circle as 60 interpolated points (slerp)
-    QPainterPath path;
-    bool first = true;
-    for (int i = 0; i <= 60; ++i) {
-        const double t = double(i) / 60.0;
-        const double d = 2.0 * std::asin(std::sqrt(
-            std::pow(std::sin((lat2-lat1)*DEG/2),2) +
-            std::cos(lat1*DEG)*std::cos(lat2*DEG)*
-            std::pow(std::sin((lon2-lon1)*DEG/2),2)));
-        if (d < 1e-6) { path.lineTo(project(lon2,lat2)); break; }
-        const double A = std::sin((1-t)*d)/std::sin(d);
-        const double B = std::sin(t*d)/std::sin(d);
-        const double x = A*std::cos(lat1*DEG)*std::cos(lon1*DEG)+B*std::cos(lat2*DEG)*std::cos(lon2*DEG);
-        const double y = A*std::cos(lat1*DEG)*std::sin(lon1*DEG)+B*std::cos(lat2*DEG)*std::sin(lon2*DEG);
-        const double z = A*std::sin(lat1*DEG)+B*std::sin(lat2*DEG);
-        const double lat = std::atan2(z,std::sqrt(x*x+y*y))/DEG;
-        const double lon = std::atan2(y,x)/DEG;
-        const QPointF pt = project(lon, lat);
-        if (first) { path.moveTo(pt); first = false; } else { path.lineTo(pt); }
-    }
-    QPen arcPen(QColor(77,166,255), 1.5, Qt::DashLine);
-    arcPen.setDashPattern({4.0, 3.0});
-    p.setPen(arcPen);
-    p.setBrush(Qt::NoBrush);
-    p.drawPath(path);
-}
-
-void DXStationMap::drawHomeMarker(QPainter &p) const
-{
-    if (m_homeGrid.isEmpty()) return;
-    const QPointF pt = project(m_homeLon, m_homeLat);
-    p.setBrush(QColor(63,185,80));
-    p.setPen(QPen(QColor(46,160,67), 1));
-    p.drawEllipse(pt, 4, 4);
-    p.setPen(QColor(63,185,80));
-    p.setFont(QFont("sans-serif", 7));
-    p.drawText(int(pt.x())+6, int(pt.y())-3, m_homeGrid.left(4));
-}
-
-void DXStationMap::drawStationMarker(QPainter &p, double lat, double lon,
-                                      QString const& label, QColor col) const
-{
-    const QPointF pt = project(lon, lat);
-    p.setBrush(col);
-    p.setPen(QPen(col.darker(140), 1));
-    p.drawEllipse(pt, 5, 5);
-    p.setPen(col);
-    p.setFont(QFont("Courier New", 7, QFont::Bold));
-    p.drawText(int(pt.x())+7, int(pt.y())-4, label.left(12));
-}
-
-void DXStationMap::drawInfoBar(QPainter &p) const
-{
-    const int h = height(), w = width();
-    p.fillRect(0, h-14, w, 14, QColor(15,20,28));
-    p.setPen(QColor(90,100,120));
-    p.drawLine(0, h-14, w, h-14);
-    p.setFont(QFont("sans-serif", 7));
-
-    if (!m_selCall.isEmpty()) {
-        const double km   = haversineKm(m_homeLat, m_homeLon, m_selLat, m_selLon);
-        const double brg  = bearingDeg(m_homeLat, m_homeLon, m_selLat, m_selLon);
-        const QString txt = QString("%1  %2  Az:%3°  %4km  SNR:%5dB")
-            .arg(m_selCall, -9)
-            .arg(m_selGrid, -4)
-            .arg(int(brg), 3)
-            .arg(int(km + 0.5))
-            .arg(m_selSNR);
-        p.setPen(QColor(200,210,230));
-        p.drawText(6, h-3, txt);
-    } else {
-        p.setPen(QColor(60,70,90));
-        p.drawText(6, h-3, "click a callsign to plot on map");
-    }
-}
-
-void DXStationMap::paintEvent(QPaintEvent *)
-{
-    QPainter p(this);
-    p.setRenderHint(QPainter::Antialiasing, false);  // off for text clarity
-
-    const int w = width(), h = height(), mapH = h - 14;
-    if (w < 20 || mapH < 20) return;
-
-    // ── Background: photorealistic world map ─────────────────────────────────
-    if (!m_worldMap.isNull()) {
-        p.drawPixmap(QRect(0, 0, w, mapH),
-                     m_worldMap,
-                     QRect(0, 0, m_worldMap.width(), m_worldMap.height()));
-        // Dark overlay so overlaid elements remain readable
-        p.fillRect(0, 0, w, mapH, QColor(0, 0, 0, 60));
-    } else {
-        for (int y = 0; y < mapH; ++y) {
-            const double t = double(y) / mapH;
-            const double s = 4.0 * t * (1.0 - t);
-            p.fillRect(0, y, w, 1, QColor(int(3+s*14), int(7+s*20), int(18+s*38)));
-        }
-    }
-
-    // ── Grid lines — dimmer when satellite photo loaded ─────────────────────
-    const bool hasSatImg = !m_worldMap.isNull();
-    const int cellW = w / 18;
-    const int cellH = mapH / 18;
-    p.setBrush(Qt::NoBrush);
-    p.setPen(QPen(hasSatImg ? QColor(80,140,200,45) : QColor(18,55,100,200), 1));
-    for (int i = 0; i <= 18; ++i) {
-        const double lon = i*20.0-180.0;
-        p.drawLine(project(lon,-90), project(lon,90));
-    }
-    for (int j = 0; j <= 18; ++j) {
-        const double lat = j*10.0-90.0;
-        p.drawLine(project(-180,lat), project(180,lat));
-    }
-
-    // ── Field labels — suppressed when satellite image active ────────────────
-    const int fontSize = qBound(4, cellH/2 - 1, cellW/3);
-    if (!hasSatImg && cellH >= 12 && fontSize >= 4) {
-        p.setFont(QFont("sans-serif", fontSize));
-        p.setPen(QColor(30, 80, 145, 170));
-        const QFontMetrics fm(p.font());
-        for (int fi = 0; fi < 18; ++fi) {
-            for (int li = 0; li < 18; ++li) {
-                const QPointF c = project(fi*20.0-180.0+10.0, li*10.0-90.0+5.0);
-                if (c.x() < 0 || c.x() > w || c.y() < 0 || c.y() > mapH) continue;
-                const QString lbl = QString("%1%2").arg(QChar('A'+fi)).arg(QChar('A'+li));
-                const int tw = fm.horizontalAdvance(lbl);
-                p.drawText(QPointF(c.x()-tw/2.0, c.y()+fm.ascent()/2.0), lbl);
-            }
-        }
-    }
-
-    // ── Equator / prime meridian ─────────────────────────────────────────────
-    p.setPen(QPen(QColor(30, 90, 160, 100), 1, Qt::DashLine));
-    p.drawLine(project(-180,0), project(180,0));
-    p.drawLine(project(0,-90), project(0,90));
-
-    // ── Selected station field + square highlight ────────────────────────────
-    if (!m_selGrid.isEmpty()) {
-        drawGridSquare(p, m_selGrid.left(2), QColor(31,111,235,40), QColor(40,130,255,150), 1);
-        if (m_selGrid.length() >= 4)
-            drawGridSquare(p, m_selGrid.left(4), QColor(77,166,255,65), QColor(100,200,255), 2);
-    }
-
-    // ── All accumulated station dots ─────────────────────────────────────────
-    const double dotR = qMax(2.0, cellW * 0.10);
-    for (auto const& s : m_stations) {
-        if (s.call == m_selCall) continue;
-        double lat, lon;
-        if (!gridToLatLon(s.grid, lat, lon)) continue;
-        QColor col = s.forMe ? QColor(80,220,120,220) :
-                     s.isCQ  ? QColor(80,160,255,220) :
-                                QColor(90,110,150,170);
-        const QPointF pt = project(lon, lat);
-        p.setBrush(col); p.setPen(Qt::NoPen);
-        p.setRenderHint(QPainter::Antialiasing, true);
-        p.drawEllipse(pt, dotR, dotR);
-        p.setRenderHint(QPainter::Antialiasing, false);
-    }
-
-    // ── Great-circle arc ─────────────────────────────────────────────────────
-    if (!m_selGrid.isEmpty() && !m_homeGrid.isEmpty())
-        drawArc(p, m_homeLat, m_homeLon, m_selLat, m_selLon);
-
-    // ── Home QTH ─────────────────────────────────────────────────────────────
-    drawHomeMarker(p);
-
-    // ── Selected station ─────────────────────────────────────────────────────
-    if (!m_selCall.isEmpty())
-        drawStationMarker(p, m_selLat, m_selLon, m_selCall, QColor(255,100,80));
-
-    drawInfoBar(p);
-}
-
-
-void DXStationMap::resizeEvent(QResizeEvent *e)
-{
-    QWidget::resizeEvent(e);
-    if (m_clearBtn) m_clearBtn->move(width() - 66, 2);
-    update();
-}
-
-void DXStationMap::mouseMoveEvent(QMouseEvent *e)
-{
-    // Show field square label as tooltip
-    const double lon = (double(e->pos().x()) / width()) * 360.0 - 180.0;
-    const double lat = 90.0 - (double(e->pos().y()) / (height()-14)) * 180.0;
-    if (lat >= -90 && lat <= 90) {
-        const int fi = int((lon + 180.0) / 20.0);
-        const int li = int((lat + 90.0) / 10.0);
-        if (fi >= 0 && fi < 18 && li >= 0 && li < 18) {
-            QString field;
-            field.append(QChar('A' + fi));
-            field.append(QChar('A' + li));
-            const int sqi = int(std::fmod(lon + 180.0, 20.0) / 2.0);
-            const int sqj = int(std::fmod(lat + 90.0, 10.0));
-            field.append(QChar('0' + sqi));
-            field.append(QChar('0' + sqj));
-            QToolTip::showText(e->globalPos(), field, this);
-        }
-    }
-    QWidget::mouseMoveEvent(e);
-}
-
-void DXStationMap::mousePressEvent(QMouseEvent *e)
-{
-    if (e->button() != Qt::LeftButton) return;
-    // Find nearest station dot within 18px
-    double minDist = 18.0;
-    PlottedStation const *found = nullptr;
-    for (auto const& s : m_stations) {
-        double lat, lon;
-        if (!gridToLatLon(s.grid, lat, lon)) continue;
-        const QPointF pt = project(lon, lat);
-        const double dx = e->pos().x() - pt.x();
-        const double dy = e->pos().y() - pt.y();
-        const double dist = std::sqrt(dx*dx + dy*dy);
-        if (dist < minDist) { minDist = dist; found = &s; }
-    }
-    if (found) {
-        m_selCall   = found->call;
-        m_selGrid   = found->grid;
-        m_selSNR    = found->snr;
-        m_selFreqHz = found->freqHz;
-        gridToLatLon(m_selGrid, m_selLat, m_selLon);
-        update();
-        emit stationClicked(found->call, found->freqHz, found->grid);
-    }
-}
-
-void DXStationMap::mouseDoubleClickEvent(QMouseEvent *)
-{
-    clearStations();
 }
 
 void DXStationMap::expireStations(int currentPeriod, int maxAge)
 {
     m_currentPeriod = currentPeriod;
-    for (int i = m_stations.size()-1; i >= 0; --i)
-        if ((currentPeriod - m_stations[i].period) > maxAge)
-            m_stations.removeAt(i);
+    for (int i=m_stations.size()-1; i>=0; --i)
+        if ((currentPeriod-m_stations[i].period) > maxAge) m_stations.removeAt(i);
     update();
+}
+
+// ── Projection ────────────────────────────────────────────────────────────────
+QPointF DXStationMap::project(double lon, double lat) const
+{
+    const int mapH = height() - INFO_H;
+    const double x = (lon+180.0)/360.0 * width();
+    const double y = (90.0-lat)/180.0  * mapH;
+    return {x, y};
+}
+
+bool DXStationMap::gridToLatLon(QString const& grid, double &lat, double &lon) const
+{
+    if (grid.length()<2) return false;
+    const auto g = grid.toUpper();
+    lon = (g[0].unicode()-'A')*20.0-180.0;
+    lat = (g[1].unicode()-'A')*10.0-90.0;
+    if (g.length()>=4) { lon+=(g[2].unicode()-'0')*2.0; lat+=(g[3].unicode()-'0'); }
+    lon += g.length()>=4 ? 1.0 : 10.0;
+    lat += g.length()>=4 ? 0.5 : 5.0;
+    return true;
+}
+
+double DXStationMap::haversineKm(double lat1,double lon1,double lat2,double lon2) const
+{
+    const double R=6371;
+    const double dLat=(lat2-lat1)*DEG, dLon=(lon2-lon1)*DEG;
+    const double a=sin(dLat/2)*sin(dLat/2)+cos(lat1*DEG)*cos(lat2*DEG)*sin(dLon/2)*sin(dLon/2);
+    return R*2*atan2(sqrt(a),sqrt(1-a));
+}
+
+double DXStationMap::bearingDeg(double lat1,double lon1,double lat2,double lon2) const
+{
+    const double y=sin((lon2-lon1)*DEG)*cos(lat2*DEG);
+    const double x=cos(lat1*DEG)*sin(lat2*DEG)-sin(lat1*DEG)*cos(lat2*DEG)*cos((lon2-lon1)*DEG);
+    return fmod(atan2(y,x)/DEG+360.0,360.0);
+}
+
+// ── Drawing helpers ───────────────────────────────────────────────────────────
+void DXStationMap::drawGridSquare(QPainter &p, QString const& grid,
+                                   QColor fill, QColor stroke, int sw) const
+{
+    if (grid.length()<2) return;
+    const auto g=grid.toUpper();
+    double lon0=(g[0].unicode()-'A')*20.0-180.0, lat0=(g[1].unicode()-'A')*10.0-90.0;
+    double lon1, lat1;
+    if (g.length()>=4) { lon0+=(g[2].unicode()-'0')*2; lat0+=(g[3].unicode()-'0'); lon1=lon0+2; lat1=lat0+1; }
+    else               { lon1=lon0+20; lat1=lat0+10; }
+    p.setBrush(fill); p.setPen(QPen(stroke,sw));
+    p.drawRect(QRectF(project(lon0,lat1),project(lon1,lat0)).normalized());
+}
+
+void DXStationMap::drawArc(QPainter &p,double lat1,double lon1,double lat2,double lon2) const
+{
+    QPainterPath path; bool first=true;
+    for (int i=0;i<=60;++i) {
+        const double t=double(i)/60;
+        const double d=2*asin(sqrt(pow(sin((lat2-lat1)*DEG/2),2)+cos(lat1*DEG)*cos(lat2*DEG)*pow(sin((lon2-lon1)*DEG/2),2)));
+        if (d<1e-6) break;
+        const double A=sin((1-t)*d)/sin(d), B=sin(t*d)/sin(d);
+        const double x=A*cos(lat1*DEG)*cos(lon1*DEG)+B*cos(lat2*DEG)*cos(lon2*DEG);
+        const double y=A*cos(lat1*DEG)*sin(lon1*DEG)+B*cos(lat2*DEG)*sin(lon2*DEG);
+        const double z=A*sin(lat1*DEG)+B*sin(lat2*DEG);
+        const double la=atan2(z,sqrt(x*x+y*y))/DEG, lo=atan2(y,x)/DEG;
+        const QPointF pt=project(lo,la);
+        if (first) { path.moveTo(pt); first=false; } else { path.lineTo(pt); }
+    }
+    QPen pen(QColor(77,200,255),1.5,Qt::DashLine);
+    pen.setDashPattern({5.0,3.0});
+    p.setPen(pen); p.setBrush(Qt::NoBrush); p.drawPath(path);
+}
+
+void DXStationMap::drawHomeMarker(QPainter &p) const
+{
+    if (m_homeGrid.isEmpty()) return;
+    const QPointF pt=project(m_homeLon,m_homeLat);
+    p.setRenderHint(QPainter::Antialiasing,true);
+    p.setBrush(QColor(63,220,100)); p.setPen(QPen(QColor(30,160,60),1));
+    p.drawEllipse(pt,5,5);
+    p.setFont(QFont("sans-serif",8,QFont::Bold));
+    p.setPen(QColor(80,255,120));
+    p.drawText(QPointF(pt.x()+7,pt.y()-4), m_homeGrid.left(4));
+    p.setRenderHint(QPainter::Antialiasing,false);
+}
+
+void DXStationMap::drawStationMarker(QPainter &p,double lat,double lon,
+                                      QString const& lbl,QColor col) const
+{
+    const QPointF pt=project(lon,lat);
+    p.setRenderHint(QPainter::Antialiasing,true);
+    p.setBrush(col); p.setPen(QPen(col.darker(150),1));
+    p.drawEllipse(pt,6,6);
+    p.setFont(QFont("Courier New",8,QFont::Bold));
+    p.setPen(col);
+    p.drawText(QPointF(pt.x()+8,pt.y()-5),lbl.left(12));
+    p.setRenderHint(QPainter::Antialiasing,false);
+}
+
+// ── Rich info panel ───────────────────────────────────────────────────────────
+void DXStationMap::drawInfoPanel(QPainter &p) const
+{
+    const int mapH = height() - INFO_H;
+    const int w    = width();
+
+    // Background
+    p.fillRect(0, mapH, w, INFO_H, QColor(5, 12, 22));
+    p.setPen(QPen(QColor(0, 90, 140), 1));
+    p.drawLine(0, mapH, w, mapH);
+
+    if (m_selCall.isEmpty()) {
+        p.setFont(QFont("sans-serif", 9));
+        p.setPen(QColor(40, 80, 110));
+        p.drawText(QRect(0, mapH, w, INFO_H), Qt::AlignCenter,
+                   tr("Click a station dot to see details"));
+        return;
+    }
+
+    // Column layout: left = photo (if QRZ), right = text
+    const int photoW = m_qrzData.valid && !m_qrzData.photo.isNull() ? 88 : 0;
+    const int textX  = photoW + 8;
+    const int textW  = w - textX - 6;
+
+    // ── Callsign (large) ──────────────────────────────────────────────────────
+    int ty = mapH + 8;
+    p.setFont(QFont("Courier New", 15, QFont::Bold));
+    p.setPen(QColor(0, 210, 255));
+    p.drawText(QRect(textX, ty, textW, 22), Qt::AlignLeft|Qt::AlignVCenter, m_selCall);
+
+    // QRZ name
+    if (m_qrzData.valid && !(m_qrzData.fname+m_qrzData.name).trimmed().isEmpty()) {
+        p.setFont(QFont("sans-serif", 9));
+        p.setPen(QColor(180,210,230));
+        ty += 22;
+        p.drawText(QRect(textX, ty, textW, 16), Qt::AlignLeft|Qt::AlignVCenter,
+                   (m_qrzData.fname+" "+m_qrzData.name).simplified());
+    }
+
+    // Location
+    QString loc;
+    if (m_qrzData.valid) {
+        if (!m_qrzData.addr2.isEmpty()) loc = m_qrzData.addr2;
+        if (!m_qrzData.country.isEmpty()) {
+            if (!loc.isEmpty()) loc += ", ";
+            loc += m_qrzData.country;
+        }
+    }
+    if (!loc.isEmpty()) {
+        ty += 16; p.setFont(QFont("sans-serif",9)); p.setPen(QColor(140,180,210));
+        p.drawText(QRect(textX,ty,textW,15),Qt::AlignLeft,loc);
+    }
+
+    // Grid / SNR / Distance / Bearing — two-column mini-table
+    ty += 18;
+    const double km  = haversineKm(m_homeLat,m_homeLon,m_selLat,m_selLon);
+    const double brg = bearingDeg(m_homeLat,m_homeLon,m_selLat,m_selLon);
+
+    struct Row { QString k, v; };
+    QList<Row> rows = {
+        {"Grid",    m_selGrid},
+        {"SNR",     QString("%1 dB").arg(m_selSNR)},
+        {"Dist",    QString("%1 km / %2°").arg(int(km+0.5)).arg(int(brg+0.5))},
+    };
+    if (m_qrzData.valid && !m_qrzData.email.isEmpty())
+        rows.append({"Email", m_qrzData.email});
+
+    p.setFont(QFont("Courier New", 8));
+    for (auto const& row : rows) {
+        if (ty > mapH + INFO_H - 10) break;
+        p.setPen(QColor(50,100,140)); p.drawText(QRect(textX,ty,38,13),Qt::AlignLeft,row.k);
+        p.setPen(QColor(160,210,240)); p.drawText(QRect(textX+40,ty,textW-40,13),Qt::AlignLeft,row.v);
+        ty += 14;
+    }
+}
+
+// ── paintEvent ───────────────────────────────────────────────────────────────
+void DXStationMap::paintEvent(QPaintEvent *)
+{
+    QPainter p(this);
+    const int w=width(), h=height(), mapH=h-INFO_H;
+    if (w<20||mapH<20) return;
+
+    // World map background
+    if (!m_worldMap.isNull()) {
+        p.drawPixmap(QRect(0,0,w,mapH), m_worldMap,
+                     QRect(0,0,m_worldMap.width(),m_worldMap.height()));
+        p.fillRect(0,0,w,mapH,QColor(0,0,0,45));
+    } else {
+        for (int y=0;y<mapH;++y) {
+            const double t=double(y)/mapH, s=4*t*(1-t);
+            p.fillRect(0,y,w,1,QColor(int(3+s*14),int(7+s*20),int(18+s*38)));
+        }
+    }
+
+    // Grid lines — subtle over photo
+    const bool hasSat=!m_worldMap.isNull();
+    const int cellW=w/18, cellH=mapH/18;
+    p.setBrush(Qt::NoBrush);
+    p.setPen(QPen(hasSat?QColor(80,140,200,40):QColor(18,55,100,200),1));
+    for (int i=0;i<=18;++i) { const double lon=i*20.0-180; p.drawLine(project(lon,-90),project(lon,90)); }
+    for (int j=0;j<=18;++j) { const double lat=j*10.0-90;  p.drawLine(project(-180,lat),project(180,lat)); }
+
+    // Field labels when no satellite image
+    const int fs=qBound(4,cellH/2-1,cellW/3);
+    if (!hasSat&&cellH>=12&&fs>=4) {
+        p.setFont(QFont("sans-serif",fs)); p.setPen(QColor(30,80,145,170));
+        const QFontMetrics fm(p.font());
+        for (int fi=0;fi<18;++fi) for (int li=0;li<18;++li) {
+            const QPointF c=project(fi*20.0-180+10, li*10.0-90+5);
+            if (c.x()<0||c.x()>w||c.y()<0||c.y()>mapH) continue;
+            const QString lbl=QString("%1%2").arg(QChar('A'+fi)).arg(QChar('A'+li));
+            p.drawText(QPointF(c.x()-fm.horizontalAdvance(lbl)/2.0,c.y()+fm.ascent()/2.0),lbl);
+        }
+    }
+
+    // Equator / prime meridian
+    p.setPen(QPen(QColor(30,90,160,80),1,Qt::DashLine));
+    p.drawLine(project(-180,0),project(180,0));
+    p.drawLine(project(0,-90),project(0,90));
+
+    // Selected station highlights
+    if (!m_selGrid.isEmpty()) {
+        drawGridSquare(p,m_selGrid.left(2),QColor(31,111,235,35),QColor(40,130,255,140),1);
+        if (m_selGrid.length()>=4)
+            drawGridSquare(p,m_selGrid,QColor(77,166,255,60),QColor(100,200,255),2);
+    }
+
+    // All station dots
+    const double dotR=qMax(2.0,cellW*0.10);
+    p.setRenderHint(QPainter::Antialiasing,true);
+    for (auto const& s:m_stations) {
+        if (s.call==m_selCall) continue;
+        double lat,lon; if (!gridToLatLon(s.grid,lat,lon)) continue;
+        QColor col=s.forMe?QColor(80,220,120,220):s.isCQ?QColor(80,160,255,220):QColor(90,110,150,170);
+        const QPointF pt=project(lon,lat);
+        p.setBrush(col); p.setPen(Qt::NoPen); p.drawEllipse(pt,dotR,dotR);
+    }
+    p.setRenderHint(QPainter::Antialiasing,false);
+
+    // Arc + markers
+    if (!m_selGrid.isEmpty()&&!m_homeGrid.isEmpty())
+        drawArc(p,m_homeLat,m_homeLon,m_selLat,m_selLon);
+    drawHomeMarker(p);
+    if (!m_selCall.isEmpty())
+        drawStationMarker(p,m_selLat,m_selLon,m_selCall,QColor(255,100,80));
+
+    // Info panel
+    drawInfoPanel(p);
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+void DXStationMap::resizeEvent(QResizeEvent *e)
+{
+    QWidget::resizeEvent(e);
+    if (m_clearBtn) m_clearBtn->move(width()-66, 2);
+    if (m_menuBtn)  m_menuBtn->move(2, 2);
+    if (m_photoLbl) m_photoLbl->move(6, height()-INFO_H+6);
+    update();
+}
+
+void DXStationMap::mousePressEvent(QMouseEvent *e)
+{
+    if (e->button()!=Qt::LeftButton) return;
+    const int mapH=height()-INFO_H;
+    if (e->pos().y()>mapH) return;   // click in info panel — ignore for dot selection
+
+    double minDist=18; PlottedStation const *found=nullptr;
+    for (auto const& s:m_stations) {
+        double lat,lon; if (!gridToLatLon(s.grid,lat,lon)) continue;
+        const QPointF pt=project(lon,lat);
+        const double d=hypot(e->pos().x()-pt.x(),e->pos().y()-pt.y());
+        if (d<minDist) { minDist=d; found=&s; }
+    }
+    if (found) {
+        m_selCall=found->call; m_selGrid=found->grid;
+        m_selSNR=found->snr;  m_selFreqHz=found->freqHz;
+        gridToLatLon(m_selGrid,m_selLat,m_selLon);
+        m_qrzData=QrzRecord{}; m_photoLbl->setVisible(false);
+        if (m_qrz) m_qrz->lookup(found->call);
+        update();
+        emit stationClicked(found->call,found->freqHz,found->grid);
+    }
+}
+
+void DXStationMap::mouseDoubleClickEvent(QMouseEvent *) { clearStations(); }
+
+void DXStationMap::mouseMoveEvent(QMouseEvent *e)
+{
+    const int mapH=height()-INFO_H;
+    if (e->pos().y()>=mapH) return;
+    const double lon=(double(e->pos().x())/width())*360.0-180.0;
+    const double lat=90.0-(double(e->pos().y())/mapH)*180.0;
+    const int fi=int((lon+180)/20), li=int((lat+90)/10);
+    if (fi>=0&&fi<18&&li>=0&&li<18) {
+        QString lbl; lbl+=QChar('A'+fi); lbl+=QChar('A'+li);
+        lbl+=QChar('0'+int(fmod(lon+180,20)/2));
+        lbl+=QChar('0'+int(fmod(lat+90, 10)));
+        QToolTip::showText(e->globalPos(),lbl,this);
+    }
+    QWidget::mouseMoveEvent(e);
 }

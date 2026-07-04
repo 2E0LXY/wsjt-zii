@@ -7,21 +7,20 @@
 #include <QPointF>
 #include <QPixmap>
 #include <QPushButton>
+#include <QLabel>
+#include <QMenu>
+#include "../qrzlookup.h"
+
 
 struct PlottedStation {
-    QString call;
-    QString grid;
-    int     snr = 0;
-    int     freqHz = 0;
-    int     period = 0;   // T/R period counter — for rolling expiry
-    bool    isCQ = false;
-    bool    forMe = false;
+    QString call, grid;
+    int snr = 0, freqHz = 0, period = 0;
+    bool isCQ = false, forMe = false;
 };
 
 class DXStationMap : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit DXStationMap(QWidget *parent = nullptr);
 
@@ -31,9 +30,11 @@ public:
     void clearStations();
     void addStation(PlottedStation const& s);
     void expireStations(int currentPeriod, int maxAge = 20);
+    void setQrzLookup(QRZLookup *qrz);   // pass in from mainwindow if configured
 
 signals:
     void stationClicked(QString call, int freqHz, QString grid);
+    void pinRequested(Qt::DockWidgetArea area);   // hamburger → mainwindow
 
 protected:
     void paintEvent(QPaintEvent *) override;
@@ -42,29 +43,38 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
 
+private slots:
+    void onQrzResult(QrzRecord const& r);
+
 private:
+    // ── Map geometry ──────────────────────────────────────────────────────────
+    static constexpr int INFO_H = 130;   // bottom info panel height
+    QPointF project(double lon, double lat) const;
+    bool    gridToLatLon(QString const& grid, double &lat, double &lon) const;
+    double  haversineKm(double, double, double, double) const;
+    double  bearingDeg(double, double, double, double) const;
+    void    drawGridSquare(QPainter &, QString const&, QColor, QColor, int) const;
+    void    drawArc(QPainter &, double, double, double, double) const;
+    void    drawHomeMarker(QPainter &) const;
+    void    drawStationMarker(QPainter &, double, double, QString const&, QColor) const;
+    void    drawInfoPanel(QPainter &) const;
+
+    // ── State ─────────────────────────────────────────────────────────────────
     QString   m_homeGrid;
     double    m_homeLat = 53.0, m_homeLon = -2.0;
     QString   m_selCall, m_selGrid;
     int       m_selSNR = 0, m_selFreqHz = 0;
     double    m_selLat = 0.0, m_selLon = 0.0;
     QList<PlottedStation> m_stations;
-    int m_currentPeriod = 0;
-    QPixmap      m_worldMap;
-    QPushButton *m_clearBtn = nullptr;
+    int       m_currentPeriod = 0;
+    QPixmap   m_worldMap;
+    QrzRecord m_qrzData;
+    QRZLookup *m_qrz = nullptr;
 
-    QPointF project(double lon, double lat) const;
-    bool    gridToLatLon(QString const& grid, double &lat, double &lon) const;
-    double  haversineKm(double lat1, double lon1, double lat2, double lon2) const;
-    double  bearingDeg(double lat1, double lon1, double lat2, double lon2) const;
-    void    drawGridSquare(QPainter &p, QString const& grid,
-                           QColor fill, QColor stroke, int strokeW) const;
-    void    drawArc(QPainter &p, double lat1, double lon1,
-                    double lat2, double lon2) const;
-    void    drawHomeMarker(QPainter &p) const;
-    void    drawStationMarker(QPainter &p, double lat, double lon,
-                              QString const& label, QColor col) const;
-    void    drawInfoBar(QPainter &p) const;
+    // ── Overlay widgets ───────────────────────────────────────────────────────
+    QPushButton *m_clearBtn = nullptr;
+    QPushButton *m_menuBtn  = nullptr;   // hamburger — dock positioning
+    QLabel      *m_photoLbl = nullptr;   // QRZ station photo
 };
 
 #endif

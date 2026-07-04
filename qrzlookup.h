@@ -1,31 +1,46 @@
 #ifndef QRZLOOKUP_H
 #define QRZLOOKUP_H
 
+#include <QObject>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QString>
-#include <QHash>
+#include <QPixmap>
 
-
-
-
-class QRZLookup  : public QObject
-{
-    Q_OBJECT
-
-public:
-    QRZLookup(QString un, QString pw);
-    void lookup(QString dxCall);
-
-private:
-    QString _username;
-    QString _password;
-    QString _url = "https://xmldata.qrz.com/xml/";
-    QString _sessionKey;
-    QNetworkAccessManager * _networkManager;
-    void initialize();
-    void setSessionKey(QNetworkReply *r);
-    void parseResponse(QNetworkReply * r);
-
+struct QrzRecord {
+    QString call, fname, name;
+    QString addr1, addr2, state, country, county;
+    QString grid, email, bio;
+    QUrl    imageUrl;
+    QPixmap photo;
+    bool    valid = false;
 };
 
-#endif // QRZLOOKUP_H
+class QRZLookup : public QObject
+{
+    Q_OBJECT
+public:
+    explicit QRZLookup(QString const& user, QString const& pass, QObject *parent = nullptr);
+
+    void lookup(QString const& call);
+    bool ready() const { return !m_sessionKey.isEmpty(); }
+
+signals:
+    void lookupResult(QrzRecord record);
+
+private slots:
+    void onSessionReply(QNetworkReply *reply);
+    void onLookupReply(QNetworkReply *reply);
+    void onPhotoReply(QNetworkReply *reply);
+
+private:
+    void startSession();
+    QString tagText(QByteArray const& data, QString const& tag);
+
+    QString m_user, m_pass, m_sessionKey, m_pendingCall;
+    QrzRecord m_pendingRecord;
+    QNetworkAccessManager m_sessionNam, m_lookupNam, m_photoNam;
+    static constexpr char URL[] = "https://xmldata.qrz.com/xml/current/";
+};
+
+#endif

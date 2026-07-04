@@ -20,6 +20,7 @@
 #include <QDesktopServices>
 #include "widgets/DXStationMap.h"
 #include "widgets/VersionChecker.h"
+#include "qrzlookup.h"
 #include <QApplication>
 #include <QStringListModel>
 #include <QSettings>
@@ -695,6 +696,29 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   // Click a station dot on the map → tune Rx and populate DX call/grid fields
   connect(m_dxMap, &DXStationMap::stationClicked,
           this, &MainWindow::on_dxMapStationClicked);
+
+  // Dock pin from hamburger button — works even when floating
+  connect(m_dxMap, &DXStationMap::pinRequested, this, [this](Qt::DockWidgetArea area) {
+    if (area == Qt::NoDockWidgetArea) {
+        m_dxMapDock->setFloating(true);
+    } else {
+        m_dxMapDock->setFloating(false);
+        removeDockWidget(m_dxMapDock);
+        addDockWidget(area, m_dxMapDock);
+        m_dxMapDock->show();
+        m_settings->setValue("dxMapArea", area==Qt::LeftDockWidgetArea ? "left" : "right");
+    }
+  });
+
+  // QRZ XML lookup — optional; only starts if credentials are in settings
+  {
+    const QString qrzUser = m_settings->value("qrzUser", "").toString();
+    const QString qrzPass = m_settings->value("qrzPass", "").toString();
+    if (!qrzUser.isEmpty()) {
+        auto *qrz = new QRZLookup(qrzUser, qrzPass, this);
+        m_dxMap->setQrzLookup(qrz);
+    }
+  }
 
   // ── Auto-updater ─────────────────────────────────────────────────────────
   m_versionChecker = new VersionChecker(QStringLiteral(VERSION_Z), this);
