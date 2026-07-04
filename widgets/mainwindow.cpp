@@ -1873,6 +1873,7 @@ void MainWindow::readSettings()
   ui->dxCallEntry->setText (m_settings->value ("DXcall", QString {}).toString ());
   ui->dxGridEntry->setText (m_settings->value ("DXgrid", QString {}).toString ());
   m_dxMapInitDone = true;
+  if (m_dxMap) m_dxMap->clearStations();   // guarantee clean slate — no phantom dots from previous session
   m_path = m_settings->value("MRUdir", m_config.save_directory ().absolutePath ()).toString ();
   m_txFirst = m_settings->value("TxFirst",false).toBool();
   m_autoCQAlternateEvenOddNext = !m_txFirst;

@@ -1,5 +1,7 @@
 #include "qrzlookup.h"
 #include <QNetworkRequest>
+#include <QSslConfiguration>
+#include <QSsl>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QXmlStreamReader>
@@ -26,7 +28,12 @@ void QRZLookup::startSession()
     url.setQuery(q);
     QNetworkRequest req{url};
     req.setHeader(QNetworkRequest::UserAgentHeader, "WSJT-Y");
-    m_sessionNam.get(req);
+    auto cfg = QSslConfiguration::defaultConfiguration();
+    cfg.setProtocol(QSsl::TlsV1_2OrLater);
+    req.setSslConfiguration(cfg);
+    auto *r = m_sessionNam.get(req);
+    connect(r, QOverload<const QList<QSslError>&>::of(&QNetworkReply::sslErrors),
+            r, [r](){ r->ignoreSslErrors(); });
 }
 
 void QRZLookup::onSessionReply(QNetworkReply *reply)
@@ -60,7 +67,12 @@ void QRZLookup::lookup(QString const& call)
     url.setQuery(q);
     QNetworkRequest req{url};
     req.setHeader(QNetworkRequest::UserAgentHeader, "WSJT-Y");
-    m_lookupNam.get(req);
+    auto cfg = QSslConfiguration::defaultConfiguration();
+    cfg.setProtocol(QSsl::TlsV1_2OrLater);
+    req.setSslConfiguration(cfg);
+    auto *r = m_lookupNam.get(req);
+    connect(r, QOverload<const QList<QSslError>&>::of(&QNetworkReply::sslErrors),
+            r, [r](){ r->ignoreSslErrors(); });
 }
 
 void QRZLookup::onLookupReply(QNetworkReply *reply)
@@ -108,7 +120,11 @@ void QRZLookup::onLookupReply(QNetworkReply *reply)
     if (r.imageUrl.isValid() && !r.imageUrl.isEmpty()) {
         QNetworkRequest req{r.imageUrl};
         req.setHeader(QNetworkRequest::UserAgentHeader,"WSJT-Y");
-        m_photoNam.get(req);
+        auto cfg = QSslConfiguration::defaultConfiguration();
+        req.setSslConfiguration(cfg);
+        auto *pr = m_photoNam.get(req);
+        connect(pr, QOverload<const QList<QSslError>&>::of(&QNetworkReply::sslErrors),
+                pr, [pr](){ pr->ignoreSslErrors(); });
         m_pendingRecord = r;
     } else {
         emit lookupResult(r);

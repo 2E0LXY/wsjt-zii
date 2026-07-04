@@ -322,10 +322,29 @@ void DXStationMap::paintEvent(QPaintEvent *)
     const int w=width(), h=height(), mapH=h-INFO_H;
     if (w<20||mapH<20) return;
 
-    // World map background
+    // World map background — apply zoom via inverse projection
     if (!m_worldMap.isNull()) {
-        p.drawPixmap(QRect(0,0,w,mapH), m_worldMap,
-                     QRect(0,0,m_worldMap.width(),m_worldMap.height()));
+        const int iw = m_worldMap.width(), ih = m_worldMap.height();
+        if (m_zoom <= 1.01) {
+            // World view — full image
+            p.drawPixmap(QRect(0,0,w,mapH), m_worldMap, QRect(0,0,iw,ih));
+        } else {
+            // Zoomed — compute which portion of the world map is visible.
+            // Inverse of project(): world_norm = pan_norm + (screen/size - pan_norm)/zoom
+            const double pnx = (m_panLon + 180.0) / 360.0;
+            const double pny = (90.0 - m_panLat) / 180.0;
+            // Visible normalised lat/lon bounds at zoom level
+            const double x0n = pnx + (0.0 - pnx) / m_zoom;   // left  edge (screen x=0)
+            const double x1n = pnx + (1.0 - pnx) / m_zoom;   // right edge (screen x=w)
+            const double y0n = pny + (0.0 - pny) / m_zoom;   // top   edge (screen y=0)
+            const double y1n = pny + (1.0 - pny) / m_zoom;   // bot   edge (screen y=mapH)
+            // Clamp to [0,1] and convert to image pixels
+            const int sx = qBound(0, int(x0n * iw), iw);
+            const int sy = qBound(0, int(y0n * ih), ih);
+            const int sw = qBound(1, int((x1n - x0n) * iw), iw - sx);
+            const int sh = qBound(1, int((y1n - y0n) * ih), ih - sy);
+            p.drawPixmap(QRect(0,0,w,mapH), m_worldMap, QRect(sx,sy,sw,sh));
+        }
         p.fillRect(0,0,w,mapH,QColor(0,0,0,45));
     } else {
         for (int y=0;y<mapH;++y) {
