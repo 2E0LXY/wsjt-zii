@@ -771,14 +771,11 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         btn->setText(b.label);
         btn->setToolTip(QString("%1 MHz FT8").arg(b.freqMHz));
         connect(btn, &QToolButton::clicked, this, [this, b](){
-            // Set frequency directly — bandComboBox model holds MHz values, not band labels.
-            // Entering text into the line edit then triggering the validator is the
-            // correct path: LiveFrequencyValidator::valid → band_changed(Hz).
+            // Call band_changed() directly — a MainWindow slot.
+            // LiveFrequencyValidator only fires on real keystrokes;
+            // programmatic setText+editingFinished does nothing.
             m_bandEdited = true;
-            ui->bandComboBox->lineEdit()->setText(
-                QString::number(b.freqMHz, 'f', 3));
-            // Invoke the validator's accepted slot as if the user pressed Enter
-            emit ui->bandComboBox->lineEdit()->editingFinished();
+            band_changed(static_cast<Frequency>(b.freqMHz * 1.0e6 + 0.5));
         });
         bandBar->addWidget(btn);
     }
@@ -16449,17 +16446,15 @@ void MainWindow::onAutoBandHop(double freqMHz, QString reason)
     // Don't interrupt an active QSO
     if (m_transmitting) return;
 
-    // Don't hop if user is mid-sequence (has DX call entered and messages generated)
+    // Don't hop if user is mid-sequence (has DX call entered and auto running)
     if (!ui->dxCallEntry->text().trimmed().isEmpty() &&
         ui->autoButton->isChecked()) return;
 
+    // Call band_changed() directly — LiveFrequencyValidator only fires
+    // on real keystrokes; programmatic setText+editingFinished does nothing.
     m_bandEdited = true;
-    ui->bandComboBox->lineEdit()->setText(
-        QString::number(freqMHz, 'f', 3));
-    emit ui->bandComboBox->lineEdit()->editingFinished();
+    band_changed(static_cast<Frequency>(freqMHz * 1.0e6 + 0.5));
 
-    // Log the hop to the status bar and unfiltered view
     statusBar()->showMessage(reason, 8000);
-
     if (m_zdebug) log("AutoBandHop: " + reason);
 }
