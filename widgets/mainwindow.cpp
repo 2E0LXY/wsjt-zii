@@ -14,6 +14,8 @@
 #include <QDockWidget>
 #include <QToolBar>
 #include <QToolButton>
+#include <QCheckBox>
+#include <QSpinBox>
 #include <QProgressDialog>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -23,6 +25,7 @@
 #include "widgets/DXStationMap.h"
 #include "widgets/VersionChecker.h"
 #include "widgets/CallRoster.h"
+#include "widgets/AutoBandHop.h"
 #include "qrzlookup.h"
 #include <QApplication>
 #include <QStringListModel>
@@ -794,6 +797,39 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         });
         bandBar->addWidget(btn);
     }
+
+    // ── Separator then Auto Band Hop toggle ───────────────────────────────────
+    bandBar->addSeparator();
+    auto *hopCheck = new QCheckBox(tr("Auto Hop"), bandBar);
+    hopCheck->setToolTip(tr(
+        "Auto Band Hop: WSJT-Y automatically selects the best FT8 band\n"
+        "based on UTC time, season, and propagation physics\n"
+        "(D-layer, F2 layer, Sporadic-E).\n"
+        "Interval: every 5 minutes. Change in Settings → WSJT-Y."));
+    hopCheck->setStyleSheet(
+        "QCheckBox{color:#00d4aa;font-weight:bold;font-size:10px;padding:0 4px;}"
+        "QCheckBox::indicator:checked{background:#006040;border:1px solid #00a060;}");
+    bandBar->addWidget(hopCheck);
+
+    // Interval spin box
+    auto *hopSpin = new QSpinBox(bandBar);
+    hopSpin->setRange(1, 60); hopSpin->setValue(5);
+    hopSpin->setSuffix(" min");
+    hopSpin->setToolTip(tr("How often Auto Band Hop re-evaluates and potentially switches band"));
+    hopSpin->setStyleSheet(
+        "QSpinBox{background:#060b12;border:1px solid #1a4060;color:#80c0a0;"
+        "font-size:10px;padding:1px 3px;max-width:58px;}");
+    bandBar->addWidget(hopSpin);
+
+    m_autoBandHop = new AutoBandHop(this);
+    connect(hopCheck, &QCheckBox::toggled, this, [this](bool on){
+        m_autoBandHop->setEnabled(on);
+    });
+    connect(hopSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int v){
+        m_autoBandHop->setIntervalMinutes(v);
+    });
+    connect(m_autoBandHop, &AutoBandHop::hopRequested,
+            this, &MainWindow::onAutoBandHop);
   }
 
   // ── Auto-updater ─────────────────────────────────────────────────────────
@@ -16411,4 +16447,25 @@ void MainWindow::onUpdateAvailable(QString tag, QUrl winUrl, QUrl debUrl)
     });
 
     connect(progress, &QProgressDialog::canceled, reply, &QNetworkReply::abort);
+}
+
+// ── Auto Band Hop ─────────────────────────────────────────────────────────────
+void MainWindow::onAutoBandHop(double freqMHz, QString reason)
+{
+    // Don't interrupt an active QSO
+    if (m_transmitting) return;
+
+    // Don't hop if user is mid-sequence (has DX call entered and messages generated)
+    if (!ui->dxCallEntry->text().trimmed().isEmpty() &&
+        ui->autoButton->isChecked()) return;
+
+    m_bandEdited = true;
+    ui->bandComboBox->lineEdit()->setText(
+        QString::number(freqMHz, 'f', 3));
+    emit ui->bandComboBox->lineEdit()->editingFinished();
+
+    // Log the hop to the status bar and unfiltered view
+    statusBar()->showMessage(reason, 8000);
+
+    if (m_zdebug) log("AutoBandHop: " + reason);
 }

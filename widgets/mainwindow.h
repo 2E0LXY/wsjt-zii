@@ -16,6 +16,7 @@
 #include "widgets/DXStationMap.h"
 #include "widgets/VersionChecker.h"
 #include "widgets/CallRoster.h"
+#include "widgets/AutoBandHop.h"
 #include <QAudioDeviceInfo>
 #include <QScopedPointer>
 #include <QDir>
@@ -448,6 +449,7 @@ private slots:
      void on_actionShow_callsigns_on_waterfall_toggled(bool checked);
      void on_actionNMS_decoder_toggled(bool checked);
      void on_dxMapStationClicked(QString call, int freqHz, QString grid);
+  void onAutoBandHop(double freqMHz, QString reason);
   void onUpdateAvailable(QString tag, QUrl winUrl, QUrl debUrl);
   void onUpdateBadgeFlash();     void qrzInit();
      void qrzSetSessionKey(QNetworkReply *r) ;
@@ -785,7 +787,8 @@ private:
   int           m_dxMapPeriod = 0;
   bool          m_dxMapInitDone = false;
   CallRoster   *m_callRoster = nullptr;
-  QDockWidget  *m_callRosterDock = nullptr;  // suppress map updates during startup restore
+  QDockWidget  *m_callRosterDock = nullptr;
+  AutoBandHop  *m_autoBandHop = nullptr;  // suppress map updates during startup restore
   VersionChecker *m_versionChecker = nullptr;
   QPushButton    *m_updateBadge = nullptr;
   QTimer         *m_flashTimer = nullptr;
