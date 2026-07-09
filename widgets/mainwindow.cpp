@@ -676,27 +676,12 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
     });
     m.exec(m_dxMapDock->mapToGlobal(pos));
   });
-  addDockWidget(Qt::LeftDockWidgetArea, m_dxMapDock);
-
-  // Wire toggle into View menu so it can always be re-opened
-  {
-    QAction *toggleAct = m_dxMapDock->toggleViewAction();
-    toggleAct->setText(tr("DX Station Map"));
-    toggleAct->setToolTip(tr("Show or hide the DX Station Map panel"));
-    // Find the View menu by title — avoids hard-coding a widget-name that may differ
-    for (auto *menu : menuBar()->findChildren<QMenu*>()) {
-      if (menu->title().contains("View", Qt::CaseInsensitive)) {
-        menu->addSeparator();
-        menu->addAction(toggleAct);
-        break;
-      }
-    }
-  }
-
-  // Set home grid square from configuration (deferred — config not fully loaded yet)
+  // Set home grid BEFORE adding to main window — prevents first paint using defaults
   if (!m_config.my_grid().isEmpty())
       m_dxMap->setHomeGrid(m_config.my_grid());
   m_dxMap->setMyCall(m_config.my_callsign());
+
+  addDockWidget(Qt::LeftDockWidgetArea, m_dxMapDock);
 
   // Click a station dot on the map → tune Rx and populate DX call/grid fields
   connect(m_dxMap, &DXStationMap::stationClicked,

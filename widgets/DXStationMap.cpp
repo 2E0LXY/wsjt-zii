@@ -53,7 +53,14 @@ DXStationMap::DXStationMap(QWidget *parent)
     homeBtn->setToolTip("Reset to world view / centre on home QTH");
     homeBtn->move(width() - 91, 2);
     connect(homeBtn, &QPushButton::clicked, this, [this, homeBtn](){
-        m_zoom = 1.0; m_panLon = 0.0; m_panLat = 20.0;
+        // Reset zoom to world view, centred on home QTH
+        m_zoom = 1.0;
+        if (m_homeGrid.length() >= 4) {
+            m_panLon = m_homeLon;
+            m_panLat = m_homeLat;
+        } else {
+            m_panLon = 0.0; m_panLat = 20.0;
+        }
         homeBtn->move(width()-91, 2);
         update();
     });
@@ -235,7 +242,9 @@ void DXStationMap::drawArc(QPainter &p,double lat1,double lon1,double lat2,doubl
 
 void DXStationMap::drawHomeMarker(QPainter &p) const
 {
-    if (m_homeGrid.isEmpty()) return;
+    // Guard: require a valid 4+ char locator that has been explicitly set by setHomeGrid()
+    // Prevents drawing at the constructor defaults (53.0, -2.0) before the real QTH is known.
+    if (m_homeGrid.length() < 4) return;
     const QPointF pt=project(m_homeLon,m_homeLat);
     p.setRenderHint(QPainter::Antialiasing,true);
     p.setBrush(QColor(63,220,100)); p.setPen(QPen(QColor(30,160,60),1));
@@ -399,9 +408,13 @@ void DXStationMap::paintEvent(QPaintEvent *)
     p.drawLine(project(-180,0),project(180,0));
     p.drawLine(project(0,-90),project(0,90));
 
-    // 4-char minor square only — only when a station is actually selected
-    if (!m_selGrid.isEmpty() && !m_selCall.isEmpty() && m_selGrid.length()>=4)
-        drawGridSquare(p,m_selGrid,QColor(77,166,255,70),QColor(100,200,255),2);
+    // 4-char minor square only — one precise rectangle, no nested field boxes
+    if (!m_selGrid.isEmpty() && !m_selCall.isEmpty() && m_selGrid.length()>=4) {
+        // Subtle field tint — 20°×10° area, very faint so it doesn't dominate
+        drawGridSquare(p, m_selGrid.left(2), QColor(40,100,180,15), QColor(40,100,180,30), 0);
+        // Precise 4-char minor square — clear bright border
+        drawGridSquare(p, m_selGrid,           QColor(77,166,255,60), QColor(100,200,255), 2);
+    }
 
     // All station dots with animation
     const double dotR = qMax(3.0, cellW * 0.12);
