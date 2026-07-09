@@ -744,10 +744,13 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_callRosterDock->setObjectName("CallRosterDock");
   m_callRosterDock->setWidget(m_callRoster);
   m_callRosterDock->setMinimumWidth(300);
+  m_callRosterDock->setMinimumHeight(90);   // show ~3 rows minimum (each row 16px + header 22px + filter bar 24px)
   m_callRosterDock->setFeatures(QDockWidget::DockWidgetClosable |
                                   QDockWidget::DockWidgetMovable |
                                   QDockWidget::DockWidgetFloatable);
   addDockWidget(Qt::BottomDockWidgetArea, m_callRosterDock);
+  m_callRosterDock->setFloating(false);
+  resizeDocks({m_callRosterDock}, {140}, Qt::Vertical);   // ~5 rows visible by default
   connect(m_callRoster, &CallRoster::callSelected,
           this, &MainWindow::on_dxMapStationClicked);
   for (auto *menu : menuBar()->findChildren<QMenu*>()) {
@@ -779,8 +782,15 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         auto *btn = new QToolButton;
         btn->setText(b.label);
         btn->setToolTip(QString("%1 MHz FT8").arg(b.freqMHz));
-        connect(btn, &QToolButton::clicked, this, [this,b](){
-            ui->bandComboBox->setCurrentText(QString(b.label));
+        connect(btn, &QToolButton::clicked, this, [this, b](){
+            // Set frequency directly — bandComboBox model holds MHz values, not band labels.
+            // Entering text into the line edit then triggering the validator is the
+            // correct path: LiveFrequencyValidator::valid → band_changed(Hz).
+            m_bandEdited = true;
+            ui->bandComboBox->lineEdit()->setText(
+                QString::number(b.freqMHz, 'f', 3));
+            // Invoke the validator's accepted slot as if the user pressed Enter
+            emit ui->bandComboBox->lineEdit()->editingFinished();
         });
         bandBar->addWidget(btn);
     }
