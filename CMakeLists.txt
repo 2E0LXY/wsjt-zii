@@ -230,6 +230,7 @@ set (wsjt_qt_CXXSRCS
   Transceiver/TCITransceiver.cpp
   Network/NetworkMessage.cpp
   Network/MessageClient.cpp
+  Network/RemoteBridge.cpp
   widgets/LettersSpinBox.cpp
   widgets/HintedSpinBox.cpp
   widgets/RestrictedSpinBox.cpp

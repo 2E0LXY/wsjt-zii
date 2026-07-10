@@ -98,6 +98,7 @@ class QSYMessage;
 class QSYMonitor;
 class ColorHighlighting;
 class MessageClient;
+class RemoteBridge;
 class QTime;
 class WSPRBandHopping;
 
@@ -450,6 +451,7 @@ private slots:
      void on_dxMapStationClicked(QString call, int freqHz, QString grid);
      void on_dxMapStationDoubleClicked(QString call, int freqHz, QString grid);
      void on_watchedCallSeen(QString call, int freqHz, QString grid);
+     void handleRemoteSetBand(Frequency freqHz, QString bandName);
   void onAutoBandHop(double freqMHz, QString reason);
   void onUpdateAvailable(QString tag, QUrl winUrl, QUrl debUrl);
   void onUpdateBadgeFlash();     void qrzInit();
@@ -1037,6 +1039,7 @@ private:
   QProgressDialog m_optimizingProgress;
   QTimer m_heartbeat;
   MessageClient * m_messageClient;
+  RemoteBridge  * m_remoteBridge = nullptr;
   PSKReporter m_psk_Reporter;
   DisplayManual m_manual;
   QHash<QString, QVariant> m_pwrBandTxMemory; // Remembers power level by band

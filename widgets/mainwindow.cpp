@@ -105,6 +105,7 @@
 #include "models/StationList.hpp"
 #include "validators/LiveFrequencyValidator.hpp"
 #include "Network/MessageClient.hpp"
+#include "Network/RemoteBridge.hpp"
 #include "Network/FoxVerifier.hpp"
 #include "Network/wsprnet.h"
 #include "signalmeter.h"
@@ -989,19 +990,41 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   connect (m_messageClient, &MessageClient::switch_configuration, m_multi_settings, &MultiSettings::select_configuration);
   connect (m_messageClient, &MessageClient::configure, this, &MainWindow::remote_configure);
   // WSJT-Y extension: remote band change (e.g. from the companion Android app)
-  connect (m_messageClient, &MessageClient::set_band, this, [this](Frequency freqHz, QString const& bandName) {
-    Frequency target = freqHz;
-    if (target == 0 && !bandName.isEmpty()) {
-      const QString want = bandName.trimmed().toLower();
-      for (auto const& b : kFT8Bands) {
-        if (want == QString(b.label).toLower()) { target = static_cast<Frequency>(b.freqMHz * 1.0e6 + 0.5); break; }
-      }
-    }
-    if (target > 0) {
-      m_bandEdited = true;
-      band_changed(target);
-    }
+  connect (m_messageClient, &MessageClient::set_band, this, &MainWindow::handleRemoteSetBand);
+
+  // ── Remote control bridge (WSS, optional — companion Android app) ────────
+  m_remoteBridge = new RemoteBridge (this);
+  connect (m_remoteBridge, &RemoteBridge::reply_requested, this,
+           [this](QString call, QString grid, quint32 audioFreqHz) {
+    on_dxMapStationDoubleClicked (call, static_cast<int> (audioFreqHz), grid);
   });
+  connect (m_remoteBridge, &RemoteBridge::halt_tx_requested, this, [this]() {
+    if (ui->autoButton->isChecked ()) ui->autoButton->click ();
+  });
+  connect (m_remoteBridge, &RemoteBridge::set_band_requested, this, &MainWindow::handleRemoteSetBand);
+  {
+    QUrl const relayUrl = m_settings->value ("remoteRelayUrl").toUrl ();
+    QString const token = m_settings->value ("remoteRelayToken").toString ();
+    if (relayUrl.isValid () && !relayUrl.host ().isEmpty ())
+      m_remoteBridge->configure (relayUrl, token);
+  }
+  if (ui->menuTools) {
+    auto *remoteAction = ui->menuTools->addAction (tr ("Configure Remote Control (Android app)…"));
+    connect (remoteAction, &QAction::triggered, this, [this]() {
+      bool ok = false;
+      auto const currentUrl = m_settings->value ("remoteRelayUrl").toString ();
+      auto const url = QInputDialog::getText (this, tr ("Remote Control — Relay URL"),
+          tr ("wss:// address of the relay (blank to disable):"), QLineEdit::Normal, currentUrl, &ok);
+      if (!ok) return;
+      auto const currentToken = m_settings->value ("remoteRelayToken").toString ();
+      auto const token = QInputDialog::getText (this, tr ("Remote Control — Auth Token"),
+          tr ("Pairing token for this station:"), QLineEdit::Normal, currentToken, &ok);
+      if (!ok) return;
+      m_settings->setValue ("remoteRelayUrl", url);
+      m_settings->setValue ("remoteRelayToken", token);
+      m_remoteBridge->configure (QUrl {url}, token);
+    });
+  }
 
   // Hook up WSPR band hopping
   connect (ui->band_hopping_schedule_push_button, &QPushButton::clicked
@@ -6765,6 +6788,7 @@ void MainWindow::on_EraseButton_clicked ()
 void MainWindow::band_activity_cleared ()
 {
   m_messageClient->decodes_cleared ();
+  if (m_remoteBridge) m_remoteBridge->send_decodes_cleared ();
   QFile f(m_config.temp_dir ().absoluteFilePath ("decoded.txt"));
   if(f.exists()) f.remove();
 }
@@ -9477,6 +9501,8 @@ void MainWindow::acceptQSO (QDateTime const& QSO_date_off, QString const& call, 
                                , tx_power, comments, name, QSO_date_on, operator_call, my_call, my_grid
                                , exchange_sent, exchange_rcvd, propmode);
   m_messageClient->logged_ADIF (ADIF);
+  if (m_remoteBridge)
+    m_remoteBridge->send_qso_logged (call, grid, dial_freq, mode, rpt_sent, rpt_received);
 
   // Z
   updateQsoCounter(true);
@@ -11984,13 +12010,18 @@ void MainWindow::postDecode (bool is_new, QString const& message)
   if (parts.size () >= 5)
     {
       auto has_seconds = parts[0].size () > 4;
+      auto const& msg_text = decode.mid (has_seconds ? 24 : 22);
       m_messageClient->decode (is_new
                                , QTime::fromString (parts[0], has_seconds ? "hhmmss" : "hhmm")
                                , parts[1].toInt ()
                                , parts[2].toFloat (), parts[3].toUInt (), parts[4]
-                               , decode.mid (has_seconds ? 24 : 22)
+                               , msg_text
                                , QChar {'?'} == decode.mid (has_seconds ? 24 + 36 : 22 + 36, 1)
                                , m_diskData);
+      if (m_remoteBridge && is_new)
+        m_remoteBridge->send_decode (parts[0], parts[1].toInt (), parts[2].toDouble (),
+                                      parts[3].toUInt (), parts[4], msg_text.trimmed (),
+                                      msg_text.trimmed ().startsWith ("CQ "), false);
     }
 }
 
@@ -12533,6 +12564,9 @@ void MainWindow::statusUpdate () const
                                   static_cast<quint8> (m_specOp),
                                   ftol, tr_period, m_multi_settings->configuration_name (),
                                   m_currentMessage);
+  if (m_remoteBridge)
+    m_remoteBridge->send_status (m_freqNominal, m_mode, m_hisCall, m_hisGrid,
+                                  ui->autoButton->isChecked (), m_transmitting);
 }
 
 void MainWindow::childEvent (QChildEvent * e)
@@ -16475,6 +16509,21 @@ void MainWindow::on_dxMapStationDoubleClicked(QString call, int freqHz, QString 
         ui->autoButton->click();              // Enable Tx — starts calling the station
     }
     if (m_transmitting) m_restart = true;    // restart current TX period if needed
+}
+
+void MainWindow::handleRemoteSetBand(Frequency freqHz, QString bandName)
+{
+  Frequency target = freqHz;
+  if (target == 0 && !bandName.isEmpty()) {
+    const QString want = bandName.trimmed().toLower();
+    for (auto const& b : kFT8Bands) {
+      if (want == QString(b.label).toLower()) { target = static_cast<Frequency>(b.freqMHz * 1.0e6 + 0.5); break; }
+    }
+  }
+  if (target > 0) {
+    m_bandEdited = true;
+    band_changed(target);
+  }
 }
 
 // A watched callsign (Call Roster "watch for callsign" field) has been
