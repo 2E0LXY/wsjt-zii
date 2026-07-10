@@ -325,6 +325,49 @@ namespace
   }
 }
 
+// ── Reliable dock repositioning (shared by every dockable module) ────────────
+// QMainWindow::addDockWidget() on a dock that is currently floating does not
+// reliably clear the floating state on every platform/Qt5 point release.
+// The sequence below (unfloat -> detach -> reattach -> force-visible) is the
+// one that has proven reliable; do not "simplify" it without retesting on
+// Windows AND Linux.
+void MainWindow::pinDockWidget(QDockWidget *dock, Qt::DockWidgetArea area, QString settingsKey)
+{
+  if (!dock) return;
+  if (area == Qt::NoDockWidgetArea) {
+    dock->setFloating(true);
+    dock->show();
+    dock->raise();
+    if (!settingsKey.isEmpty()) m_settings->setValue(settingsKey, "float");
+    return;
+  }
+  dock->setFloating(false);
+  removeDockWidget(dock);
+  addDockWidget(area, dock);
+  dock->setFloating(false);
+  dock->setVisible(true);
+  dock->show();
+  dock->raise();
+  if (!settingsKey.isEmpty())
+    m_settings->setValue(settingsKey, area == Qt::LeftDockWidgetArea ? "left" : "right");
+}
+
+// Adds dock->toggleViewAction() to the main window's View menu, so a closed
+// dock can always be reopened — without this, closing a dock's [x] makes it
+// unreachable until restart.
+void MainWindow::registerDockInViewMenu(QDockWidget *dock, QString label)
+{
+  if (!dock) return;
+  for (auto *menu : menuBar()->findChildren<QMenu*>()) {
+    if (menu->title().contains("View", Qt::CaseInsensitive)) {
+      auto *act = dock->toggleViewAction();
+      act->setText(label);
+      menu->addAction(act);
+      break;
+    }
+  }
+}
+
 //--------------------------------------------------- MainWindow constructor
 MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
                        MultiSettings * multi_settings, QSharedMemory *shdmem,
@@ -646,50 +689,6 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   connect(m_wideGraph.data (), SIGNAL(freezeDecode2(int)),this,SLOT(freezeDecode(int)));
   connect(m_wideGraph.data (), SIGNAL(f11f12(int)),this,SLOT(bumpFqso(int)));
   connect(m_wideGraph.data (), SIGNAL(setXIT2(int)),this,SLOT(setXIT(int)));
-
-// ── Reliable dock repositioning (shared by every dockable module) ────────────
-// QMainWindow::addDockWidget() on a dock that is currently floating does not
-// reliably clear the floating state on every platform/Qt5 point release.
-// The sequence below (unfloat -> detach -> reattach -> force-visible) is the
-// one that has proven reliable; do not "simplify" it without retesting on
-// Windows AND Linux.
-void MainWindow::pinDockWidget(QDockWidget *dock, Qt::DockWidgetArea area, QString settingsKey)
-{
-  if (!dock) return;
-  if (area == Qt::NoDockWidgetArea) {
-    dock->setFloating(true);
-    dock->show();
-    dock->raise();
-    if (!settingsKey.isEmpty()) m_settings->setValue(settingsKey, "float");
-    return;
-  }
-  dock->setFloating(false);
-  removeDockWidget(dock);
-  addDockWidget(area, dock);
-  dock->setFloating(false);
-  dock->setVisible(true);
-  dock->show();
-  dock->raise();
-  if (!settingsKey.isEmpty())
-    m_settings->setValue(settingsKey, area == Qt::LeftDockWidgetArea ? "left" : "right");
-}
-
-// Adds dock->toggleViewAction() to the main window's View menu, so a closed
-// dock can always be reopened — without this, closing a dock's [x] makes it
-// unreachable until restart.
-void MainWindow::registerDockInViewMenu(QDockWidget *dock, QString label)
-{
-  if (!dock) return;
-  for (auto *menu : menuBar()->findChildren<QMenu*>()) {
-    if (menu->title().contains("View", Qt::CaseInsensitive)) {
-      auto *act = dock->toggleViewAction();
-      act->setText(label);
-      menu->addAction(act);
-      break;
-    }
-  }
-}
-
 
   m_dxMap = new DXStationMap(this);
   m_dxMapDock = new QDockWidget(tr("DX Station Map"), this);
