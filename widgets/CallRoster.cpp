@@ -19,45 +19,56 @@ CallRoster::CallRoster(QWidget *parent)
     topBar->addWidget(m_stats);
     vl->addLayout(topBar);
 
-    // Table
-    m_table = new QTableWidget(0, COL_COUNT, this);
-    m_table->setHorizontalHeaderLabels({"Call","Grid","dB","Hz","km","°","DXCC","Cont","Message"});
-    m_table->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
-    m_table->horizontalHeader()->setSortIndicatorShown(true);
-    m_table->horizontalHeader()->setStretchLastSection(true);
-    m_table->horizontalHeader()->setSectionsClickable(true);
-    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_table->setSortingEnabled(true);
-    m_table->verticalHeader()->hide();
-    m_table->setShowGrid(false);
-    m_table->setAlternatingRowColors(false);
-    m_table->setStyleSheet(
-        "QTableWidget{background:#060b12;color:#c0d8e8;font-family:'Courier New';font-size:10px;"
-        "selection-background-color:#0d3a5a;border:none;}"
-        "QTableWidget::item{padding:1px 4px;border-bottom:1px solid #0a1828;}"
-        "QHeaderView::section{background:#0a1828;color:#4a8ab0;font-size:10px;padding:2px 4px;"
-        "border-bottom:1px solid #0d2035;border-right:1px solid #0d2035;}");
+    // Table — two side-by-side panes so more rows fit in the same height
+    auto buildTable = [this]() -> QTableWidget* {
+        auto *t = new QTableWidget(0, COL_COUNT, this);
+        t->setHorizontalHeaderLabels({"Call","Grid","dB","Hz","km","°","DXCC","Cont","Message"});
+        t->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+        t->horizontalHeader()->setSortIndicatorShown(true);
+        t->horizontalHeader()->setStretchLastSection(true);
+        t->horizontalHeader()->setSectionsClickable(true);
+        t->setSelectionBehavior(QAbstractItemView::SelectRows);
+        t->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        t->setSortingEnabled(true);
+        t->verticalHeader()->hide();
+        t->setShowGrid(false);
+        t->setAlternatingRowColors(false);
+        t->setStyleSheet(
+            "QTableWidget{background:#060b12;color:#c0d8e8;font-family:'Courier New';font-size:10px;"
+            "selection-background-color:#0d3a5a;border:none;}"
+            "QTableWidget::item{padding:1px 4px;border-bottom:1px solid #0a1828;}"
+            "QHeaderView::section{background:#0a1828;color:#4a8ab0;font-size:10px;padding:2px 4px;"
+            "border-bottom:1px solid #0d2035;border-right:1px solid #0d2035;}");
+        t->setColumnWidth(COL_CALL, 72); t->setColumnWidth(COL_GRID, 44);
+        t->setColumnWidth(COL_SNR,  30); t->setColumnWidth(COL_FREQ, 42);
+        t->setColumnWidth(COL_DIST, 52); t->setColumnWidth(COL_BRG,  32);
+        t->setColumnWidth(COL_DXCC, 88); t->setColumnWidth(COL_CONT, 38);
+        return t;
+    };
+    m_tableLeft  = buildTable();
+    m_tableRight = buildTable();
 
-    // Column widths
-    m_table->setColumnWidth(COL_CALL, 72); m_table->setColumnWidth(COL_GRID, 44);
-    m_table->setColumnWidth(COL_SNR,  30); m_table->setColumnWidth(COL_FREQ, 42);
-    m_table->setColumnWidth(COL_DIST, 52); m_table->setColumnWidth(COL_BRG,  32);
-    m_table->setColumnWidth(COL_DXCC, 88); m_table->setColumnWidth(COL_CONT, 38);
-
-    vl->addWidget(m_table);
+    auto *tablesRow = new QHBoxLayout;
+    tablesRow->setSpacing(2);
+    tablesRow->addWidget(m_tableLeft);
+    tablesRow->addWidget(m_tableRight);
+    vl->addLayout(tablesRow);
 
     connect(m_filter, &QLineEdit::textChanged, this, &CallRoster::rebuild);
 
-    connect(m_table, &QTableWidget::cellClicked, this, [this](int row, int) {
-        auto *ci = m_table->item(row, COL_CALL);
-        if (!ci) return;
-        const QString call = ci->text().trimmed();
-        if (m_entries.contains(call)) {
-            auto const& e = m_entries[call];
-            emit callSelected(call, e.freq, e.grid);
-        }
-    });
+    auto onCellClicked = [this](QTableWidget *table) {
+        return [this, table](int row, int) {
+            auto *ci = table->item(row, COL_CALL);
+            if (!ci) return;
+            const QString call = ci->text().trimmed();
+            if (m_entries.contains(call)) {
+                auto const& e = m_entries[call];
+                emit callSelected(call, e.freq, e.grid);
+            }
+        };
+    };
+    connect(m_tableLeft,  &QTableWidget::cellClicked, this, onCellClicked(m_tableLeft));
+    connect(m_tableRight, &QTableWidget::cellClicked, this, onCellClicked(m_tableRight));
 
     // Expire old entries every 30s
     m_expireTimer = new QTimer(this);
@@ -105,12 +116,48 @@ void CallRoster::expireOld(int maxSeconds)
     if (changed) rebuild();
 }
 
+void CallRoster::addRowTo(QTableWidget *table, RosterEntry const& e)
+{
+    const int row = table->rowCount();
+    table->insertRow(row);
+
+    QColor bg;
+    if (e.forMe)      bg = QColor(80,15,15);     // dark red — calling ME
+    else if (e.isCQ)  bg = QColor(8,25,50);      // dark blue — CQ
+    else              bg = QColor(5,12,20);       // default
+
+    auto item = [&](QString const& txt, Qt::Alignment align = Qt::AlignLeft|Qt::AlignVCenter) {
+        auto *it = new QTableWidgetItem(txt);
+        it->setBackground(bg);
+        it->setTextAlignment(align);
+        if (e.forMe)     it->setForeground(QColor(255,120,120));
+        else if (e.isCQ) it->setForeground(QColor(100,180,255));
+        return it;
+    };
+
+    table->setItem(row, COL_CALL, item(e.call));
+    table->setItem(row, COL_GRID, item(e.grid));
+    table->setItem(row, COL_SNR,  item(QString::number(e.snr), Qt::AlignRight|Qt::AlignVCenter));
+    table->setItem(row, COL_FREQ, item(QString::number(e.freq), Qt::AlignRight|Qt::AlignVCenter));
+    table->setItem(row, COL_DIST, item(e.distKm>0 ? QString::number(int(e.distKm)) : QString(),
+                                          Qt::AlignRight|Qt::AlignVCenter));
+    table->setItem(row, COL_BRG,  item(e.bearing>0 ? QString::number(int(e.bearing))+"°" : QString(),
+                                          Qt::AlignRight|Qt::AlignVCenter));
+    table->setItem(row, COL_DXCC, item(e.dxcc));
+    table->setItem(row, COL_CONT, item(e.continent));
+    table->setItem(row, COL_MSG,  item(e.msg));
+    table->setRowHeight(row, 16);
+}
+
 void CallRoster::rebuild()
 {
     const QString flt = m_filter->text().trimmed().toUpper();
-    m_table->setSortingEnabled(false);
-    m_table->setRowCount(0);
+    m_tableLeft->setSortingEnabled(false);
+    m_tableRight->setSortingEnabled(false);
+    m_tableLeft->setRowCount(0);
+    m_tableRight->setRowCount(0);
 
+    QList<RosterEntry const*> shown;
     int cqCount=0, forMeCount=0;
     for (auto const& e : m_entries) {
         if (!flt.isEmpty() &&
@@ -118,43 +165,20 @@ void CallRoster::rebuild()
             !e.dxcc.contains(flt, Qt::CaseInsensitive) &&
             !e.continent.contains(flt, Qt::CaseInsensitive))
             continue;
-
-        const int row = m_table->rowCount();
-        m_table->insertRow(row);
-
-        // Row background colour
-        QColor bg;
-        if (e.forMe)      bg = QColor(80,15,15);     // dark red — calling ME
-        else if (e.isCQ)  bg = QColor(8,25,50);      // dark blue — CQ
-        else              bg = QColor(5,12,20);       // default
-
-        auto item = [&](QString const& txt, Qt::Alignment align = Qt::AlignLeft|Qt::AlignVCenter) {
-            auto *it = new QTableWidgetItem(txt);
-            it->setBackground(bg);
-            it->setTextAlignment(align);
-            if (e.forMe)     it->setForeground(QColor(255,120,120));
-            else if (e.isCQ) it->setForeground(QColor(100,180,255));
-            return it;
-        };
-
-        m_table->setItem(row, COL_CALL, item(e.call));
-        m_table->setItem(row, COL_GRID, item(e.grid));
-        m_table->setItem(row, COL_SNR,  item(QString::number(e.snr), Qt::AlignRight|Qt::AlignVCenter));
-        m_table->setItem(row, COL_FREQ, item(QString::number(e.freq), Qt::AlignRight|Qt::AlignVCenter));
-        m_table->setItem(row, COL_DIST, item(e.distKm>0 ? QString::number(int(e.distKm)) : QString(),
-                                              Qt::AlignRight|Qt::AlignVCenter));
-        m_table->setItem(row, COL_BRG,  item(e.bearing>0 ? QString::number(int(e.bearing))+"°" : QString(),
-                                              Qt::AlignRight|Qt::AlignVCenter));
-        m_table->setItem(row, COL_DXCC, item(e.dxcc));
-        m_table->setItem(row, COL_CONT, item(e.continent));
-        m_table->setItem(row, COL_MSG,  item(e.msg));
-        m_table->setRowHeight(row, 16);
-
+        shown.append(&e);
         if (e.forMe) ++forMeCount;
         if (e.isCQ)  ++cqCount;
     }
 
-    m_table->setSortingEnabled(true);
+    // Fill left column top-to-bottom, then right — same reading order as a
+    // two-column newspaper page — so the same number of rows fits in half
+    // the height each pane would otherwise need.
+    const int leftCount = (shown.size() + 1) / 2;
+    for (int i = 0; i < shown.size(); ++i)
+        addRowTo(i < leftCount ? m_tableLeft : m_tableRight, *shown[i]);
+
+    m_tableLeft->setSortingEnabled(true);
+    m_tableRight->setSortingEnabled(true);
 
     QString stat = QString("%1 calls").arg(m_entries.size());
     if (cqCount)   stat += QString("  %1 CQ").arg(cqCount);

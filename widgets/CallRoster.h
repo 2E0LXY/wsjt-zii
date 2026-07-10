@@ -10,6 +10,7 @@
 #include <QHeaderView>
 #include <QTimer>
 #include <QMap>
+#include <QList>
 #include <cmath>
 #include <QDateTime>
 
@@ -42,10 +43,12 @@ private:
                COL_DXCC, COL_CONT, COL_MSG, COL_COUNT };
 
     void rebuild();
+    void addRowTo(QTableWidget *table, RosterEntry const& e);
     double haversineKm(double, double, double, double) const;
     double bearingDeg(double, double, double, double) const;
 
-    QTableWidget *m_table;
+    QTableWidget *m_tableLeft;
+    QTableWidget *m_tableRight;
     QLineEdit    *m_filter;
     QLabel       *m_stats;
     QTimer       *m_expireTimer;

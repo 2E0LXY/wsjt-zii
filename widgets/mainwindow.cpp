@@ -756,7 +756,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_callRosterDock = new QDockWidget(tr("Call Roster"), this);
   m_callRosterDock->setObjectName("CallRosterDock");
   m_callRosterDock->setWidget(m_callRoster);
-  m_callRosterDock->setMinimumWidth(300);
+  m_callRosterDock->setMinimumWidth(560);  // two side-by-side tables now, not one
   m_callRosterDock->setMinimumHeight(90);   // show ~3 rows minimum (each row 16px + header 22px + filter bar 24px)
   m_callRosterDock->setFeatures(QDockWidget::DockWidgetClosable |
                                   QDockWidget::DockWidgetMovable |
