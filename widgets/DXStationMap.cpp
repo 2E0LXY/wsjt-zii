@@ -118,6 +118,32 @@ void DXStationMap::onQrzResult(QrzRecord const& r)
 
 void DXStationMap::setMyCall(QString const& call) { m_myCall = call.toUpper(); }
 
+void DXStationMap::setExtraInfo(QString const& dxcc, QString const& continent, int cqZone, int ituZone)
+{
+    m_extraDxcc = dxcc;
+    m_extraContinent = continent;
+    m_extraCqZone = cqZone;
+    m_extraItuZone = ituZone;
+    update();
+}
+
+void DXStationMap::selectStationByCall(QString const& call, QString const& grid, int freqHz, int snr)
+{
+    if (call.isEmpty()) return;
+    const bool sameStationAlreadySelected = (call.compare(m_selCall, Qt::CaseInsensitive) == 0);
+    m_selCall = call;
+    m_selGrid = !grid.isEmpty() ? grid : m_callGrid.value(call);
+    m_selSNR  = snr;
+    m_selFreqHz = freqHz;
+    gridToLatLon(m_selGrid, m_selLat, m_selLon);
+    if (!sameStationAlreadySelected) {
+        m_qrzData = QrzRecord{};
+        if (m_photoLbl) m_photoLbl->setVisible(false);
+        if (m_qrz) m_qrz->lookup(call);
+    }
+    update();
+}
+
 void DXStationMap::setHomeGrid(QString const& grid)
 {
     m_homeGrid = grid.toUpper().left(6);
@@ -347,6 +373,9 @@ void DXStationMap::drawInfoPanel(QPainter &p) const
         {"SNR",     QString("%1 dB").arg(m_selSNR)},
         {"Dist",    QString("%1 km / %2°").arg(int(km+0.5)).arg(int(brg+0.5))},
     };
+    if (!m_extraDxcc.isEmpty())      rows.append({"DXCC",  m_extraDxcc});
+    if (!m_extraContinent.isEmpty()) rows.append({"Cont",  m_extraContinent});
+    if (m_extraCqZone > 0)           rows.append({"CQ/ITU",QString("%1 / %2").arg(m_extraCqZone).arg(m_extraItuZone)});
     if (m_qrzData.valid && !m_qrzData.email.isEmpty())
         rows.append({"Email", m_qrzData.email});
 

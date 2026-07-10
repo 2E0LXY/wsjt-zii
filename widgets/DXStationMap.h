@@ -36,6 +36,14 @@ public:
     void setMyCall(QString const& call);
     void expireStations(int currentPeriod, int maxAge = 20);
     void setQrzLookup(QRZLookup *qrz);   // pass in from mainwindow if configured
+    // DXCC/CQ-zone/ITU-zone/continent come from the local country-file lookup
+    // (m_logBook), not QRZ.com — mainwindow pushes it in here so this panel is
+    // the single place all call info is shown (was previously duplicated in
+    // the separate "Call Info" group box).
+    void setExtraInfo(QString const& dxcc, QString const& continent, int cqZone, int ituZone);
+    // Programmatically select a station (e.g. double-click in Band Activity)
+    // so it shows in this panel exactly as if its dot had been clicked.
+    void selectStationByCall(QString const& call, QString const& grid, int freqHz = 0, int snr = 0);
 
 signals:
     void stationClicked(QString call, int freqHz, QString grid);
@@ -76,6 +84,8 @@ private:
     QPixmap   m_worldMap;
     QrzRecord m_qrzData;
     QRZLookup *m_qrz = nullptr;
+    QString   m_extraDxcc, m_extraContinent;
+    int       m_extraCqZone = 0, m_extraItuZone = 0;
 
 
     // ── Zoom / pan ────────────────────────────────────────────────────────────

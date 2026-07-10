@@ -647,33 +647,68 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   connect(m_wideGraph.data (), SIGNAL(f11f12(int)),this,SLOT(bumpFqso(int)));
   connect(m_wideGraph.data (), SIGNAL(setXIT2(int)),this,SLOT(setXIT(int)));
 
-  // DX Station Map dock (bottom-left, dockable)
+// ── Reliable dock repositioning (shared by every dockable module) ────────────
+// QMainWindow::addDockWidget() on a dock that is currently floating does not
+// reliably clear the floating state on every platform/Qt5 point release.
+// The sequence below (unfloat -> detach -> reattach -> force-visible) is the
+// one that has proven reliable; do not "simplify" it without retesting on
+// Windows AND Linux.
+void MainWindow::pinDockWidget(QDockWidget *dock, Qt::DockWidgetArea area, QString settingsKey)
+{
+  if (!dock) return;
+  if (area == Qt::NoDockWidgetArea) {
+    dock->setFloating(true);
+    dock->show();
+    dock->raise();
+    if (!settingsKey.isEmpty()) m_settings->setValue(settingsKey, "float");
+    return;
+  }
+  dock->setFloating(false);
+  removeDockWidget(dock);
+  addDockWidget(area, dock);
+  dock->setFloating(false);
+  dock->setVisible(true);
+  dock->show();
+  dock->raise();
+  if (!settingsKey.isEmpty())
+    m_settings->setValue(settingsKey, area == Qt::LeftDockWidgetArea ? "left" : "right");
+}
+
+// Adds dock->toggleViewAction() to the main window's View menu, so a closed
+// dock can always be reopened — without this, closing a dock's [x] makes it
+// unreachable until restart.
+void MainWindow::registerDockInViewMenu(QDockWidget *dock, QString label)
+{
+  if (!dock) return;
+  for (auto *menu : menuBar()->findChildren<QMenu*>()) {
+    if (menu->title().contains("View", Qt::CaseInsensitive)) {
+      auto *act = dock->toggleViewAction();
+      act->setText(label);
+      menu->addAction(act);
+      break;
+    }
+  }
+}
+
+
   m_dxMap = new DXStationMap(this);
   m_dxMapDock = new QDockWidget(tr("DX Station Map"), this);
   m_dxMapDock->setObjectName("DXStationMapDock");
   m_dxMapDock->setWidget(m_dxMap);
   m_dxMapDock->setMinimumSize(260, 180);
-  // Lock position — no accidental dragging; right-click title to reposition
+  // Movable (native drag-to-any-area) + the hamburger/right-click quick-pin
+  // menu below both reposition the same dock; users can use whichever they
+  // find quicker.
   m_dxMapDock->setFeatures(QDockWidget::DockWidgetClosable |
+                            QDockWidget::DockWidgetMovable  |
                             QDockWidget::DockWidgetFloatable);
   m_dxMapDock->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(m_dxMapDock, &QWidget::customContextMenuRequested, this,
           [this](QPoint const& pos) {
     QMenu m;
-    m.addAction(tr("Pin Left"),  [this]{
-      addDockWidget(Qt::LeftDockWidgetArea,  m_dxMapDock);
-      m_dxMapDock->setVisible(true);
-      m_settings->setValue("dxMapArea", "left");
-    });
-    m.addAction(tr("Pin Right"), [this]{
-      addDockWidget(Qt::RightDockWidgetArea, m_dxMapDock);
-      m_dxMapDock->setVisible(true);
-      m_settings->setValue("dxMapArea", "right");
-    });
-    m.addAction(tr("Float (detach)"), [this]{
-      m_dxMapDock->setFloating(true);
-      m_settings->setValue("dxMapArea", "float");
-    });
+    m.addAction(tr("Pin Left"),      [this]{ pinDockWidget(m_dxMapDock, Qt::LeftDockWidgetArea,  "dxMapArea"); });
+    m.addAction(tr("Pin Right"),     [this]{ pinDockWidget(m_dxMapDock, Qt::RightDockWidgetArea, "dxMapArea"); });
+    m.addAction(tr("Float (detach)"),[this]{ pinDockWidget(m_dxMapDock, Qt::NoDockWidgetArea,    "dxMapArea"); });
     m.exec(m_dxMapDock->mapToGlobal(pos));
   });
   // Set home grid BEFORE adding to main window — prevents first paint using defaults
@@ -682,25 +717,16 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_dxMap->setMyCall(m_config.my_callsign());
 
   addDockWidget(Qt::LeftDockWidgetArea, m_dxMapDock);
+  registerDockInViewMenu(m_dxMapDock, tr("DX Station Map"));
 
   // Click a station dot on the map → tune Rx and populate DX call/grid fields
   connect(m_dxMap, &DXStationMap::stationClicked,
           this, &MainWindow::on_dxMapStationClicked);
 
-  // Dock pin from hamburger button — works regardless of floating state.
-  // Qt5 rule: calling addDockWidget() on a floating dock re-docks it correctly.
-  // Do NOT call removeDockWidget first — that detaches it from the main window
-  // entirely before re-adding, which can cause the widget to disappear on some
-  // platforms. setFloating(false) before addDockWidget is also redundant and
-  // can interfere with the geometry calculation.
+  // Dock pin from the map widget's own hamburger button — same shared helper
+  // as the dock's right-click menu, so both stay in sync and both actually work.
   connect(m_dxMap, &DXStationMap::pinRequested, this, [this](Qt::DockWidgetArea area) {
-    if (area == Qt::NoDockWidgetArea) {
-        m_dxMapDock->setFloating(true);
-    } else {
-        addDockWidget(area, m_dxMapDock);   // re-docks if floating, moves if already docked
-        m_dxMapDock->setVisible(true);
-        m_settings->setValue("dxMapArea", area==Qt::LeftDockWidgetArea ? "left" : "right");
-    }
+    pinDockWidget(m_dxMapDock, area, "dxMapArea");
   });
 
   // QRZ XML lookup — reads from Settings → WSJT-Y → QRZ.COM tab
@@ -748,6 +774,30 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
       menu->addAction(act);
       break;
     }
+  }
+
+  // ── Gen Msgs / Tx editor collapse toggle ──────────────────────────────────
+  // controls_stack_widget hosts the Gen Msgs / Tx1-6 message editor tabs
+  // (fixed max height 220px). Collapsing it hides that whole strip; because
+  // L_Right_RXFrequency already carries the layout's stretch factor, the
+  // decode table below immediately reclaims the freed height.
+  m_genMsgsToggleBtn = new QToolButton(this);
+  m_genMsgsToggleBtn->setArrowType(Qt::DownArrow);
+  m_genMsgsToggleBtn->setToolTip(tr("Show/hide the message editor"));
+  m_genMsgsToggleBtn->setAutoRaise(true);
+  m_genMsgsToggleBtn->setFixedSize(20, 16);
+  if (ui->L_Right_Controls)
+    ui->L_Right_Controls->addWidget(m_genMsgsToggleBtn, 0, 0, Qt::AlignRight);
+  connect(m_genMsgsToggleBtn, &QToolButton::clicked, this, [this]() {
+    const bool nowVisible = !ui->controls_stack_widget->isVisible();
+    ui->controls_stack_widget->setVisible(nowVisible);
+    m_genMsgsToggleBtn->setArrowType(nowVisible ? Qt::DownArrow : Qt::RightArrow);
+    m_settings->setValue("genMsgsEditorVisible", nowVisible);
+  });
+  {
+    const bool startVisible = m_settings->value("genMsgsEditorVisible", true).toBool();
+    ui->controls_stack_widget->setVisible(startVisible);
+    m_genMsgsToggleBtn->setArrowType(startVisible ? Qt::DownArrow : Qt::RightArrow);
   }
 
   // ── Band quick-select toolbar (WSJT-X Improved) ──────────────────────────────
@@ -1942,17 +1992,12 @@ void MainWindow::readSettings()
   // Force DX Station Map to left dock on first run of each new version.
   // restoreState() from an older session always puts it back at bottom.
   {
-    // Restore user-selected dock position (set via right-click title menu)
+    // Restore user-selected dock position (set via right-click title menu / hamburger)
     const QString area = m_settings->value("dxMapArea", "left").toString();
     if (m_dxMapDock) {
-      m_dxMapDock->hide();
-      removeDockWidget(m_dxMapDock);
-      if (area == "right")
-        addDockWidget(Qt::RightDockWidgetArea, m_dxMapDock);
-      else if (area == "float")
-        { addDockWidget(Qt::LeftDockWidgetArea, m_dxMapDock); m_dxMapDock->setFloating(true); }
-      else
-        addDockWidget(Qt::LeftDockWidgetArea, m_dxMapDock);
+      if (area == "right")      pinDockWidget(m_dxMapDock, Qt::RightDockWidgetArea, QString());
+      else if (area == "float") pinDockWidget(m_dxMapDock, Qt::NoDockWidgetArea,    QString());
+      else                      pinDockWidget(m_dxMapDock, Qt::LeftDockWidgetArea,  QString());
       m_dxMapDock->show();
     }
   }
@@ -3939,7 +3984,7 @@ void MainWindow::update_auto_call_pileup_mode_ui()
 
   if (pileup_mode)
     {
-      ui->cbAutoCall->setStyleSheet ("QCheckBox { color: #cc0000; font-weight: 700; }");
+      ui->cbAutoCall->setStyleSheet ("QToolButton { color: #cc0000; font-weight: 700; }");
     }
   else
     {
@@ -10775,6 +10820,7 @@ void MainWindow::band_changed (Frequency f)
     }
     m_lastBand.clear ();
     m_bandEdited = false;
+    if (m_dxMap) m_dxMap->clearStations();  // stations plotted are only valid for the previous band
     if (m_config.spot_to_psk_reporter ())
       {
         // Upload any queued spots before changing band
@@ -14993,8 +15039,6 @@ void MainWindow::bandActivityClickToggle(Qt::KeyboardModifiers modifiers)
 
 void MainWindow::dxLookup(QString dxCall, QString dxGrid) {
 
-    if (!ui->w_callInfo->isVisible()) return;
-
     QTextCursor cursor;
     bool callB4;
     bool countryB4;
@@ -15003,8 +15047,7 @@ void MainWindow::dxLookup(QString dxCall, QString dxGrid) {
     bool CQZoneB4;
     bool ITUZoneB4;
 
-    clearCallInfo();
-
+    if (ui->w_callInfo->isVisible()) clearCallInfo();
 
     if (dxCall.isNull()) {
         if (ui->decodedTextBrowser->hasFocus()) {
@@ -15024,8 +15067,9 @@ void MainWindow::dxLookup(QString dxCall, QString dxGrid) {
         }
     }
 
-    ui->ci_dxcall->setText(dxCall);
-    qrzLookup(dxCall);
+    if (dxCall.isEmpty()) return;
+
+    // Local (offline) country-file lookup — no network round trip, always safe to run.
     auto const& looked_up = m_logBook.countries ()->lookup (dxCall);
     QString continent = AD1CCty::continent (looked_up.continent);
     continent.replace("AF", "Africa");
@@ -15037,6 +15081,18 @@ void MainWindow::dxLookup(QString dxCall, QString dxGrid) {
     continent.replace("SA", "S. America");
     continent.replace("UN", "N/A");
 
+    // Single unified call-info panel (DX Station Map, below the map) — also
+    // triggers the ONE shared QRZ.com lookup (map's m_qrz), instead of the
+    // separate qrzLookup()/networkManager session mainwindow used to run in
+    // parallel for the same callsign.
+    if (m_dxMap) {
+        m_dxMap->setExtraInfo(looked_up.entity_name, continent, looked_up.CQ_zone, looked_up.ITU_zone);
+        m_dxMap->selectStationByCall(dxCall, dxGrid.left(4));
+    }
+
+    if (!ui->w_callInfo->isVisible()) return;
+
+    ui->ci_dxcall->setText(dxCall);
     ui->ci_continent->setText(continent);
     ui->ci_continent->setCursorPosition(0);
 
@@ -15183,8 +15239,18 @@ void MainWindow::qrzResponseHandler(QNetworkReply * r) {
                 }
 
                 if ( reader.name() == "grid") {
-                    ui->ci_grid->setText(reader.readElementText());
-                    ui->ci_grid->setCursorPosition(0);
+                    // QRZ.com's registered/callbook grid is informational only —
+                    // it can be years stale or coarser than the grid the station
+                    // actually transmitted, and must never silently replace the
+                    // decode-derived grid used for ci_distance/ci_bearing (that
+                    // caused Call Info and the DX Station Map's "Dist" to disagree,
+                    // since the map always uses the decoded grid). Show it
+                    // separately; only backfill ci_grid if we don't have one yet.
+                    m_qrzProfileGrid = reader.readElementText();
+                    if (ui->ci_grid->text().trimmed().isEmpty()) {
+                        ui->ci_grid->setText(m_qrzProfileGrid);
+                        ui->ci_grid->setCursorPosition(0);
+                    }
                     continue;
                 }
 
@@ -15232,14 +15298,14 @@ void MainWindow::qrzResponseHandler(QNetworkReply * r) {
             statusBar()->showMessage(tr("QRZ Lookup Failed: %1").arg(error), 5000);
         }
         auto const currentGrid = ui->dxGridEntry->text();
-        auto const lookedUpGrid = ui->ci_grid->text();
+        auto const lookedUpGrid = m_qrzProfileGrid;
         if (lookedUpGrid.length() > currentGrid.length()
             && qrzPendingLookupCall == ui->dxCallEntry->text()
             && lookedUpGrid.startsWith(currentGrid)) {
             ui->dxGridEntry->setText(lookedUpGrid);
         }
         qrzPendingLookupCall = "";
-        ci_gridLookup();
+        m_qrzProfileGrid.clear();
     }
     r->deleteLater();
 }
@@ -15274,6 +15340,7 @@ void MainWindow::log(QString s) {
 
 void MainWindow::clearCallInfo() {
 
+    m_qrzProfileGrid.clear();
     ui->ci_dxcall->clear();
     ui->ci_grid->clear();
     ui->ci_continent->clear();

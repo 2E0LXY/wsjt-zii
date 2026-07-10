@@ -25,14 +25,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout_15">
     <item row="1" column="0">
-     <layout class="QHBoxLayout" name="L_Buttons" stretch="0,2,2,2,2,2,0,2,2,2,2,0,1,0">
-      <item>
-       <widget class="QCheckBox" name="cbCQonly">
-        <property name="text">
-         <string>CQ only</string>
-        </property>
-       </widget>
-      </item>
+     <layout class="QHBoxLayout" name="L_Buttons" stretch="2,2,2,2,2,0,2,2,2,2,0,1,0">
       <item>
        <widget class="QPushButton" name="logQSOButton">
         <property name="minimumSize">
@@ -297,7 +290,7 @@
        </property>
        <layout class="QGridLayout" name="gridLayout_14">
         <item row="0" column="0">
-         <layout class="QVBoxLayout" name="L_Left" stretch="0,0,0,0,0,0">
+         <layout class="QVBoxLayout" name="L_Left" stretch="0,0,0,0,0,0,0">
           <item>
            <widget class="QLabel" name="lh_decodes_title_label">
             <property name="maximumSize">
@@ -320,6 +313,39 @@
              <set>Qt::AlignCenter</set>
             </property>
            </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="L_Left_CQOnlyRow">
+            <item>
+             <spacer name="cqOnlyLeftSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QToolButton" name="cbCQonly">
+              <property name="toolTip">
+               <string>Show only CQ callers in the Band Activity list</string>
+              </property>
+              <property name="text">
+               <string>CQ only</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="toolButtonStyle">
+               <enum>Qt::ToolButtonTextOnly</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QLabel" name="lh_decodes_headings_label">
@@ -461,6 +487,9 @@
           </item>
           <item>
            <widget class="QGroupBox" name="w_callInfo">
+            <property name="visible">
+             <bool>false</bool>
+            </property>
             <property name="title">
              <string>Call Info</string>
             </property>
@@ -991,22 +1020,34 @@ QLabel[oob=&quot;true&quot;] {
               <number>0</number>
              </property>
              <item>
-              <widget class="QCheckBox" name="cbAutoCQ">
+              <widget class="QToolButton" name="cbAutoCQ">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When this is ticked, all hell breaks loose, the antichrist takes over, earth implodes and all humanity ceases to exist. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;WARNING&lt;/span&gt;: Tested on animals, non-vegan, includes gluten and traces of nuts!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Auto CQ</string>
                </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="toolButtonStyle">
+                <enum>Qt::ToolButtonTextOnly</enum>
+               </property>
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="cbAutoCall">
+              <widget class="QToolButton" name="cbAutoCall">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Similarly to Auto CQ, but the earth doesn't implode. Gluten free.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Auto Call</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="toolButtonStyle">
+                <enum>Qt::ToolButtonTextOnly</enum>
                </property>
               </widget>
              </item>

@@ -3,6 +3,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QToolButton>
 #include <QByteArray>
 #include <QString>
 #include <QStringList>
@@ -788,6 +789,9 @@ private:
   bool          m_dxMapInitDone = false;
   CallRoster   *m_callRoster = nullptr;
   QDockWidget  *m_callRosterDock = nullptr;
+  void pinDockWidget(QDockWidget *dock, Qt::DockWidgetArea area, QString settingsKey);
+  void registerDockInViewMenu(QDockWidget *dock, QString label);
+  QToolButton *m_genMsgsToggleBtn = nullptr;
   AutoBandHop  *m_autoBandHop = nullptr;  // suppress map updates during startup restore
   VersionChecker *m_versionChecker = nullptr;
   QPushButton    *m_updateBadge = nullptr;
@@ -850,6 +854,7 @@ private:
   QLabel labDate;
   QString qrzSessionKey;
   QString qrzPendingLookupCall;
+  QString m_qrzProfileGrid;  // QRZ.com callbook grid — informational only, never overwrites ci_grid
   QNetworkAccessManager * networkManager;
 
   QLabel auto_tx_label;
