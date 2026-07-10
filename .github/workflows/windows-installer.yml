@@ -95,11 +95,14 @@ jobs:
       - name: Configure (CMake / MSYS2 MinGW64)
         run: |
           mkdir build && cd build
+          VERSION_Z_OVERRIDE=""
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then VERSION_Z_OVERRIDE="${GITHUB_REF_NAME#v}"; fi
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/mingw64 \
             -DCMAKE_PREFIX_PATH=/mingw64 \
             -DWSJT_SKIP_MANPAGES=ON \
+            -DVERSION_Z_OVERRIDE="${VERSION_Z_OVERRIDE}" \
             -DWSJT_GENERATE_DOCS=OFF \
             -DWSJT_BUILD_UTILS=OFF \
             -DWSJT_WITH_OMNIRIG=ON \

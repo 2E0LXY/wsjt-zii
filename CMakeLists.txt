@@ -80,7 +80,17 @@ set (PROJECT_MANUAL_DIRECTORY_URL https://github.com/2E0LXY/wsjt-y)
 set (PROJECT_SAMPLES_URL https://sourceforge.net/projects/wsjt/files/)
 #set (PROJECT_SAMPLES_UPLOAD_DEST frs.sourceforge.net:/home/frs/project/wsjt/)
 # WSJT-Z mod version suffix shown in UI and package metadata.
-set (VERSION_Z "3.4.3")
+# Driven by the git tag (VERSION_Z_OVERRIDE, passed by CI as the pushed tag
+# name with its leading 'v' stripped) so packaged artifact filenames always
+# match the release tag. The literal below is ONLY a fallback for local/
+# manual builds that aren't run from a tag — do not rely on bumping it by
+# hand for tagged releases, that's what caused v3.4.4-v3.4.9 to all ship
+# artifacts still labelled 3.4.3.
+if (VERSION_Z_OVERRIDE)
+  set (VERSION_Z "${VERSION_Z_OVERRIDE}")
+else ()
+  set (VERSION_Z "3.4.9")
+endif ()
 message (STATUS "******************************************************")
 message (STATUS "Building ${PROJECT_BUNDLE_NAME} ${VERSION_Z} (base WSJT-X ${PROJECT_VERSION}) for ${CMAKE_SYSTEM_NAME}-${PROJECT_ARCHITECTURE}")
 message (STATUS "******************************************************")
@@ -1989,8 +1999,15 @@ set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
 if (WIN32)
   set (CPACK_GENERATOR "NSIS")
+  # CPack's default filename uses PROJECT_VERSION (Versions.cmake's frozen
+  # upstream WSJT-X base version, e.g. 3.4.3) — not VERSION_Z, the fork's
+  # own tag-driven version. Without this override every release's .exe
+  # ships labelled with whatever upstream snapshot this fork started from,
+  # regardless of which vX.Y.Z tag actually produced it.
+  set (CPACK_PACKAGE_FILE_NAME "wsjty-${VERSION_Z}-win64")
 elseif (APPLE)
   set (CPACK_GENERATOR "DragNDrop")
+  set (CPACK_PACKAGE_FILE_NAME "wsjty-${VERSION_Z}-macos")
 else ()
   find_program (DPKG_BUILDER dpkg-buildpackage DOC "Debian package builder")
   if (DPKG_BUILDER)
@@ -2008,6 +2025,11 @@ else ()
     else (DPKG_PROGRAM)
       set (CPACK_DEBIAN_PACKAGE_ARCHITECTURE noarch)
     endif (DPKG_PROGRAM)
+    # Standard Debian convention, built from VERSION_Z (the fork's own tag)
+    # rather than CPack's default which uses the frozen upstream
+    # PROJECT_VERSION from Versions.cmake — see the WIN32 CPACK_PACKAGE_FILE_NAME
+    # comment above for why that's wrong.
+    set (CPACK_DEBIAN_FILE_NAME "wsjty_${VERSION_Z}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
 
     list (APPEND CPACK_GENERATOR "DEB")
   endif (DPKG_BUILDER)

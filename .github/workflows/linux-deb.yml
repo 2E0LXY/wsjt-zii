@@ -36,11 +36,14 @@ jobs:
       - name: Configure (CMake)
         run: |
           mkdir build && cd build
+          VERSION_Z_OVERRIDE=""
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then VERSION_Z_OVERRIDE="${GITHUB_REF_NAME#v}"; fi
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr \
             -DWSJT_SKIP_MANPAGES=ON \
             -DWSJT_GENERATE_DOCS=OFF \
+            -DVERSION_Z_OVERRIDE="${VERSION_Z_OVERRIDE}" \
             ..
 
       - name: Build
