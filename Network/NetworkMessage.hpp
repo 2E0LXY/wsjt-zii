@@ -561,6 +561,7 @@ namespace NetworkMessage
       SwitchConfiguration,
       Configure,
       AnnotationInfo,
+      SetBand,                  // WSJT-Y extension: remote band/frequency change
       maximum_message_type_     // ONLY add new message types
                                 // immediately before here
     };

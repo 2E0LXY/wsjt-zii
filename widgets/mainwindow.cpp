@@ -306,6 +306,13 @@ namespace
       "QToolButton:disabled{background:#0a1420;border-color:#0d2035;color:#3a5570;}"
       "QToolButton:disabled:checked{background:#0a5a2a;border-color:#0d2035;color:#a0c0a8;}";
 
+  struct BandFreq { const char *label; double freqMHz; };
+  BandFreq const kFT8Bands[] = {
+      {"160m",1.840},{"80m",3.573},{"60m",5.357},{"40m",7.074},
+      {"30m",10.136},{"20m",14.074},{"17m",18.100},{"15m",21.074},
+      {"12m",24.915},{"10m",28.074},{"6m",50.313},{"2m",144.174}
+  };
+
   bool message_is_73 (int type, QStringList const& msg_parts)
   {
     return type >= 0
@@ -831,13 +838,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         "QToolButton{background:#0a1828;border:1px solid #1a4060;color:#5090b0;"
         "font-size:10px;font-weight:bold;padding:2px 7px;border-radius:3px;min-width:34px;}"
         "QToolButton:hover{background:#0d2840;color:#00c8ff;border-color:#0080b0;}");
-    struct Band { const char *label; double freqMHz; };
-    static const Band bands[]={
-        {"160m",1.840},{"80m",3.573},{"60m",5.357},{"40m",7.074},
-        {"30m",10.136},{"20m",14.074},{"17m",18.100},{"15m",21.074},
-        {"12m",24.915},{"10m",28.074},{"6m",50.313},{"2m",144.174}
-    };
-    for (auto const& b : bands) {
+    for (auto const& b : kFT8Bands) {
         auto *btn = new QToolButton;
         btn->setText(b.label);
         btn->setToolTip(QString("%1 MHz FT8").arg(b.freqMHz));
@@ -987,6 +988,20 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   connect (m_messageClient, &MessageClient::highlight_callsign, ui->decodedTextBrowser, &DisplayText::highlight_callsign);
   connect (m_messageClient, &MessageClient::switch_configuration, m_multi_settings, &MultiSettings::select_configuration);
   connect (m_messageClient, &MessageClient::configure, this, &MainWindow::remote_configure);
+  // WSJT-Y extension: remote band change (e.g. from the companion Android app)
+  connect (m_messageClient, &MessageClient::set_band, this, [this](Frequency freqHz, QString const& bandName) {
+    Frequency target = freqHz;
+    if (target == 0 && !bandName.isEmpty()) {
+      const QString want = bandName.trimmed().toLower();
+      for (auto const& b : kFT8Bands) {
+        if (want == QString(b.label).toLower()) { target = static_cast<Frequency>(b.freqMHz * 1.0e6 + 0.5); break; }
+      }
+    }
+    if (target > 0) {
+      m_bandEdited = true;
+      band_changed(target);
+    }
+  });
 
   // Hook up WSPR band hopping
   connect (ui->band_hopping_schedule_push_button, &QPushButton::clicked

@@ -407,6 +407,19 @@ void MessageClient::impl::parse_message (QByteArray const& msg)
               }
                 break;
 
+              case NetworkMessage::SetBand:
+              {
+                quint64 frequency {0};
+                QByteArray band_name;
+                in >> frequency >> band_name;
+                TRACE_UDP ("SetBand frequency:" << frequency << "band_name:" << band_name);
+                if (check_status (in) != Fail)
+                  {
+                    Q_EMIT self_->set_band (frequency, QString::fromUtf8 (band_name));
+                  }
+              }
+                break;
+
               default:
               // Ignore
               //

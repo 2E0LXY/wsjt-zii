@@ -126,6 +126,12 @@ public:
   // this signal is emitted if the server has sent information about a callsign
   Q_SIGNAL void annotation_info (QString const& dx_call, bool sort_order_provided, quint32 sort_order);
 
+  // WSJT-Y extension: this signal is emitted if a remote client (e.g. the
+  // companion Android app) has requested a band/frequency change. Frequency
+  // is an absolute dial frequency in Hz; if zero, band_name (e.g. "20m")
+  // is used to look up the frequency instead.
+  Q_SIGNAL void set_band (Frequency frequency, QString const& band_name);
+
     // this signal is emitted when network errors occur or if a host
   // lookup fails
   Q_SIGNAL void error (QString const&) const;
