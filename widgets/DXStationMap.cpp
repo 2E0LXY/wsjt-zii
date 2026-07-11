@@ -290,7 +290,7 @@ void DXStationMap::drawArc(QPainter &p,double lat1,double lon1,double lat2,doubl
 //   sin(elev) = sin(lat)*sin(decl) + cos(lat)*cos(decl)*cos(hourAngle)
 // hourAngle here is just (this point's longitude - sub-solar longitude),
 // in degrees, since both advance 15 deg/hour together.
-void DXStationMap::drawGreyline(QPainter &p, int w, int mapH) const
+void DXStationMap::drawGreyline(QPainter &p) const
 {
     auto const utcNow = QDateTime::currentDateTimeUtc();
     auto const& date = utcNow.date();
@@ -473,7 +473,7 @@ void DXStationMap::paintEvent(QPaintEvent *)
         }
     }
 
-    drawGreyline(p, w, mapH);
+    drawGreyline(p);
 
     // Grid lines — subtle over photo
     const bool hasSat=!m_worldMap.isNull();
