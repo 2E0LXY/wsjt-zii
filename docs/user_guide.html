@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { background:#060b12; color:#c0d8e8; font-family:sans-serif; font-size:13px; }
+h1 { color:#00d4ff; border-bottom:2px solid #0a2040; padding-bottom:6px; }
+h2 { color:#00d4ff; margin-top:28px; border-bottom:1px solid #1a4060; padding-bottom:4px; }
+h3 { color:#5090b0; margin-top:18px; }
+a { color:#00d4ff; }
+table { border-collapse:collapse; width:100%; margin:8px 0; }
+th, td { border:1px solid #1a4060; padding:6px 10px; text-align:left; vertical-align:top; }
+th { background:#0a1828; color:#00d4ff; }
+td { background:#080e18; }
+code { background:#0a1828; color:#a0e0ff; padding:1px 5px; border-radius:3px; }
+.tip { background:#0a1828; border-left:4px solid #00aa00; padding:8px 12px; margin:10px 0; }
+.warn { background:#2a1400; border-left:4px solid #cc6600; padding:8px 12px; margin:10px 0; }
+.dont { background:#2a0000; border-left:4px solid #cc0000; padding:8px 12px; margin:10px 0; }
+.toc a { display:block; padding:2px 0; }
+.credit-row td { background:#060b12; border:none; padding:4px 10px; }
+.footer { text-align:center; color:#5090b0; font-size:11px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h1>📡 WSJT-Y User Guide</h1>
+<p>WSJT-Y is 2E0LXY's independent fork of <b>WSJT-Z</b> (SQ9FVE), itself built on <b>WSJT-X</b>
+(K1JT and the WSJT-X Development Group). This guide covers everything specific to WSJT-Y —
+the map, roster, band automation, remote control, and the rest of what's been added on top of
+the core FT8/FT4/WSPR/MSK144 engine WSJT-X already provides.</p>
+
+<div class="toc">
+<h3>Contents</h3>
+<a href="#layout">🖥️ Main Window Layout</a>
+<a href="#bands">📻 Band &amp; Frequency Control</a>
+<a href="#working">📞 Working Stations</a>
+<a href="#map">🗺️ DX Station Map</a>
+<a href="#roster">📋 Call Roster</a>
+<a href="#filtering">🔍 Filtering &amp; Band Activity</a>
+<a href="#logging">📗 Logging &amp; QRZ</a>
+<a href="#remote">📱 Remote Control (Android App)</a>
+<a href="#psk">🌐 PSK Reporter</a>
+<a href="#tips">💡 Tips</a>
+<a href="#donts">⚠️ Do's and Don'ts</a>
+<a href="#trouble">🛠️ Troubleshooting</a>
+</div>
+
+<h2 id="layout">🖥️ Main Window Layout</h2>
+<table>
+<tr><th>Panel</th><th>What it's for</th></tr>
+<tr><td><b>Band Activity</b></td><td>Everything decoded on your current band. The blue bar above it
+shows CQ-only / Auto CQ / Auto Call / Hold Tx Freq / Tx even-1st as toggle buttons — green when on,
+blue when off.</td></tr>
+<tr><td><b>Rx Frequency</b></td><td>Decodes on your current Rx passband, and (when expanded) the
+Gen Msgs / Tx1–6 message editor below it.</td></tr>
+<tr><td><b>DX Station Map</b></td><td>World map with worked/heard stations plotted live. See
+<a href="#map">below</a>.</td></tr>
+<tr><td><b>Call Roster</b></td><td>Two-column live table of everyone currently on the band. See
+<a href="#roster">below</a>.</td></tr>
+</table>
+<div class="tip">Every panel above is a dock — drag its title bar to reposition, or right-click /
+use its hamburger menu to pin left, pin right, or float it. Closed a panel by accident? It's still
+in the <b>View</b> menu.</div>
+
+<h2 id="bands">📻 Band &amp; Frequency Control</h2>
+<p>The band toolbar along the top gives one-click access to every FT8 calling frequency, 160m
+through 2m. Click a band button to QSY immediately.</p>
+<h3>Auto Band Hop</h3>
+<p>Tick <b>Auto Hop</b> and WSJT-Y checks every 5 minutes whether a better band is available,
+based on time of day, season, and a propagation table (D-layer absorption at night favours the
+low bands; F2-layer and equinox conditions favour the high bands; a rough Sporadic-E season
+allowance for 12m/10m). It only moves bands — it never touches your Tx settings.</p>
+<div class="tip">Auto Hop is a heuristic, not a real-time propagation feed — treat a hop as "worth
+a look", not a guarantee. Turn it off any time you want to stay put.</div>
+
+<h2 id="working">📞 Working Stations</h2>
+<table>
+<tr><th>Action</th><th>Result</th></tr>
+<tr><td>Double-click a decode in Band Activity</td><td>QSYs to their frequency, fills in their
+call/grid, generates the reply sequence.</td></tr>
+<tr><td>Single-click a station dot on the map, or a Call Roster row</td><td><b>Information only</b>
+— tunes Rx so you can listen, shows their QRZ/DXCC info. Does not transmit.</td></tr>
+<tr><td>Double-click a station dot on the map</td><td>QSYs, fills in their details, and starts
+calling them (same as double-clicking their decode).</td></tr>
+<tr><td>Double-click empty map area</td><td>Clears all plotted stations.</td></tr>
+</table>
+<h3>Auto CQ / Auto Call</h3>
+<p><b>Auto CQ</b> calls CQ on a repeating cycle. <b>Auto Call</b> answers CQs automatically —
+turning it on locks <b>CQ only</b> on (shown dimmed/green) so you're only ever auto-answering
+genuine CQ callers, not partway-through exchanges.</p>
+<div class="warn">If CQ only looks stuck on and won't untick, check whether Auto Call is on —
+that's the lock, not a bug.</div>
+<h3>Watch for Callsign</h3>
+<p>Type a callsign into the Call Roster's <b>watch for callsign</b> field. When it's heard: the
+row highlights yellow, a notification pops up, WSJT-Y beeps, then it QSYs, fills in the call, and
+starts calling automatically — the same sequence as a map double-click.</p>
+
+<h2 id="map">🗺️ DX Station Map</h2>
+<ul>
+<li><b>Pan / zoom</b>: left-drag to pan, scroll wheel to zoom, home button to reset.</li>
+<li><b>Pin left / right / float</b>: hamburger menu on the map, or right-click its dock title.</li>
+<li><b>Greyline</b>: the soft night-side shading is the real-time day/night terminator, computed
+from your system clock — a classic guide to likely enhanced propagation paths at dawn/dusk.</li>
+<li><b>Station info panel</b>: click a dot to see grid, distance/bearing, DXCC, continent, CQ/ITU
+zone, and (if configured) their QRZ.com photo and email — all in one place below the map.</li>
+</ul>
+
+<h2 id="roster">📋 Call Roster</h2>
+<p>Two side-by-side tables so more stations fit on screen at once. Click any column header to sort
+— click again to reverse. The bar along the bottom shows the most distant callsign, the strongest
+signal, and the weakest, across everything currently listed.</p>
+<div class="tip">Double-clicking <b>Erase</b> clears the roster too, alongside the decode history —
+handy for a clean slate at the start of a new band/session.</div>
+
+<h2 id="filtering">🔍 Filtering &amp; Band Activity</h2>
+<p>The <b>Filtering / Prefixes / States / Ignore / Alerts / Others</b> tab strip above Band
+Activity controls what gets shown or ignored: DXCC entity filters, US state filters, a personal
+ignore list, and audible/visual alerts for callsigns or countries you care about. The
+<b>CQ only</b> button above Band Activity is the quickest single toggle if all you want is to hide
+non-CQ traffic.</p>
+
+<h2 id="logging">📗 Logging &amp; QRZ</h2>
+<p>QSOs log the normal way (Log QSO button, or automatically depending on your settings) — nothing
+about the map, roster, or remote app changes how logging works; they all just read from the same
+log. QRZ.com lookups (photo, name, email, callbook grid) populate the map's info panel when
+configured with a QRZ XML subscription under Settings.</p>
+<div class="warn">A station's QRZ.com callbook grid is separate from the grid they actually
+transmitted on air — WSJT-Y always uses the on-air decoded grid for distance/bearing, never the
+callbook one, since hams don't always keep their QRZ profile current.</div>
+
+<h2 id="remote">📱 Remote Control (Android App)</h2>
+<p>The companion Android app shows the live decode stream, lets you tap a CQ to reply, change
+band, and halt Tx — from your phone. It does <b>not</b> keep its own log; every QSO is still
+logged by WSJT-Y itself, exactly as normal.</p>
+<h3>Setup</h3>
+<ol>
+<li>In WSJT-Y: <b>Tools → Configure Remote Control</b>.</li>
+<li>Set a <b>password</b> — the same one goes into the Android app. Required either way; leaving
+it blank disables remote access entirely rather than leaving it open.</li>
+<li>Choose one connection mode (or both):
+  <table>
+  <tr><th>Mode</th><th>How</th><th>Trade-off</th></tr>
+  <tr><td><b>Relay</b></td><td>Enter a <code>wss://</code> relay address (see the
+  <code>wsjty-relay</code> project). Works anywhere with no router changes.</td>
+  <td>Needs a relay server running somewhere; adds one extra hop.</td></tr>
+  <tr><td><b>Direct</b></td><td>Enter a port; WSJT-Y listens directly. On the same WiFi it just
+  works; over the internet, forward that port on your router.</td>
+  <td>Plain <code>ws://</code> — not encrypted in transit. Fine on a trusted LAN; a real trade-off
+  if you expose it over WAN.</td></tr>
+  </table>
+</li>
+</ol>
+
+<h2 id="psk">🌐 PSK Reporter</h2>
+<p>Spots your decodes to the PSK Reporter network when enabled under Settings. The PSK Reporter
+window only opens when you ask for it (Decode menu) — it no longer reopens itself on every launch.</p>
+
+<h2 id="tips">💡 Tips</h2>
+<ul>
+<li>Collapse the Gen Msgs / Tx editor (small arrow above Band Activity) when you don't need it —
+Band Activity reclaims the space automatically.</li>
+<li>The band toolbar, Call Roster, and DX Station Map are all separate docks — arrange them once
+to suit your monitor and WSJT-Y remembers the layout.</li>
+<li>Greyline plus a quick glance at Auto Band Hop's suggestion is a fast way to decide where to
+point your beam.</li>
+</ul>
+
+<h2 id="donts">⚠️ Do's and Don'ts</h2>
+<table>
+<tr><th>✅ Do</th><th>❌ Don't</th></tr>
+<tr><td>Keep your callsign, grid, and rig settings accurate in Configuration before operating.</td>
+<td>Leave Auto Call running unattended for long periods without checking in — you're still
+responsible for what your station transmits.</td></tr>
+<tr><td>Set a real password before enabling remote control, on both ends.</td>
+<td>Expose direct mode over WAN without understanding it's unencrypted transport.</td></tr>
+<tr><td>Double-check band edges and your licence's power/mode privileges before transmitting.</td>
+<td>Assume Auto Band Hop's suggestion overrides your own judgement about propagation or band
+plans.</td></tr>
+</table>
+
+<h2 id="trouble">🛠️ Troubleshooting</h2>
+<table>
+<tr><th>Symptom</th><th>Likely cause</th></tr>
+<tr><td>CQ only won't untick</td><td>Auto Call is on and has locked it — turn off Auto Call
+first.</td></tr>
+<tr><td>PSK Reporter shows "TLS initialization failed"</td><td>Missing OpenSSL runtime library on
+Linux (fixed by the packaged <code>.deb</code>'s dependencies from v3.4.10 on) — if it persists,
+check your system has a current <code>libssl</code> installed.</td></tr>
+<tr><td>Remote app won't connect</td><td>Password must match exactly on both ends. For direct
+mode, confirm the port is actually reachable (same WiFi, or forwarded correctly on your
+router).</td></tr>
+<tr><td>Map markers look wrong for a station</td><td>The map always plots the decoded on-air grid,
+not a QRZ profile grid — if a station's transmission didn't include a grid, no marker will
+show until one is heard.</td></tr>
+</table>
+
+<hr style="border-color:#1a4060; margin-top:40px;">
+
+<h2>🙏 With Thanks</h2>
+<table>
+<tr class="credit-row"><td>📻</td><td><b>WSJT-X</b> — Joe Taylor K1JT and the WSJT-X Development
+Team. The foundation everything here is built on.</td></tr>
+<tr class="credit-row"><td>🔧</td><td><b>WSJT-Z</b> — SQ9FVE (Mateusz Lubas). The direct base this
+fork started from.</td></tr>
+<tr class="credit-row"><td>🎛️</td><td><b>NMS decoder</b> — IU8LMC (Carmine Vitiello).</td></tr>
+<tr class="credit-row"><td>🖼️</td><td><b>Qt</b> — the application framework this entire interface
+is built with.</td></tr>
+<tr class="credit-row"><td>📡</td><td><b>Hamlib</b> — rig control.</td></tr>
+<tr class="credit-row"><td>🌍</td><td><b>NASA / Reto Stockli (GSFC)</b> — Blue Marble imagery used
+for the DX Station Map background.</td></tr>
+<tr class="credit-row"><td>🎨</td><td><b>QDarkStyleSheet</b> — dark theme foundation.</td></tr>
+<tr class="credit-row"><td>🔌</td><td><b>gorilla/websocket</b>, <b>modernc.org/sqlite</b> — the
+Go relay's WebSocket handling and station database.</td></tr>
+<tr class="credit-row"><td>📱</td><td><b>Jetpack Compose</b>, <b>OkHttp</b> — the Android
+companion app.</td></tr>
+<tr class="credit-row"><td>🌐</td><td><b>Caddy</b> — TLS and reverse proxying for the relay.</td></tr>
+<tr class="credit-row"><td>📖</td><td><b>QRZ.com</b> — callsign lookup data.</td></tr>
+<tr class="credit-row"><td>📶</td><td><b>PSK Reporter</b> — the spotting network.</td></tr>
+</table>
+
+<h2>⚖️ Disclaimer</h2>
+<p>WSJT-Y is provided free of charge, "as is", with no warranty of any kind, express or implied —
+including, without limitation, any warranty of merchantability or fitness for a particular
+purpose. Use it entirely at your own risk.</p>
+<p>Amateur radio transmission is regulated. <b>You, the operator, are solely responsible</b> for
+holding a valid amateur radio licence for your jurisdiction, and for complying with its
+conditions — permitted bands, modes, power limits, band plans, and any other applicable
+regulation. Nothing in this software substitutes for that responsibility, and no automation
+feature (Auto CQ, Auto Call, Auto Band Hop, remote control, or any other) transfers that
+responsibility away from you. You are responsible for whatever your station transmits, whether
+you typed it or an automated feature did.</p>
+<p>The authors and contributors accept no liability for any damage — to equipment, data, your
+station, or otherwise — arising from the use, misuse, or inability to use this software, nor for
+any regulatory or licensing consequences of its use. Remote-control features that open network
+ports or transmit credentials carry the usual risks of any networked software; review the
+<a href="#remote">Remote Control</a> section above and configure it in line with your own
+security requirements.</p>
+<p>This software is distributed under the GNU General Public License v3.0. See the project's
+LICENSE file for the complete licence text.</p>
+
+<p class="footer">WSJT-Y — github.com/2E0LXY/wsjt-zii</p>
+
+</body>
+</html>

@@ -861,6 +861,7 @@ set (TOP_LEVEL_RESOURCES
   contrib/gpl-v3-logo.svg
   artwork/splash.png
   images/worldmap.jpg
+  docs/user_guide.html
   )
 
 set (PALETTE_FILES

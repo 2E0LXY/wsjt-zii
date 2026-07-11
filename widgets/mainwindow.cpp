@@ -59,6 +59,9 @@
 #include <QUdpSocket>
 #include <QAbstractItemView>
 #include <QInputDialog>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QTextBrowser>
 #if QT_VERSION >= QT_VERSION_CHECK (5, 15, 0)
 #include <QRandomGenerator>
 #endif
@@ -1067,6 +1070,29 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
         MessageBox::warning_message (this, tr ("Direct Connection Failed"),
             tr ("Could not listen on port %1: %2").arg (port).arg (m_remoteBridge->error_string ()));
       }
+    });
+  }
+
+  if (ui->menuHelp) {
+    auto *guideAction = new QAction (tr ("WSJT-Y User Guide"), this);
+    ui->menuHelp->insertAction (ui->menuHelp->actions ().value (0, nullptr), guideAction);
+    connect (guideAction, &QAction::triggered, this, [this]() {
+      auto *dlg = new QDialog (this);
+      dlg->setWindowTitle (tr ("WSJT-Y User Guide"));
+      dlg->resize (760, 700);
+      dlg->setAttribute (Qt::WA_DeleteOnClose);
+      auto *layout = new QVBoxLayout (dlg);
+      auto *browser = new QTextBrowser (dlg);
+      browser->setOpenExternalLinks (true);
+      QFile file (":/user_guide.html");
+      if (file.open (QIODevice::ReadOnly | QIODevice::Text)) {
+        browser->setHtml (QString::fromUtf8 (file.readAll ()));
+      } else {
+        browser->setPlainText (tr ("User guide resource not found."));
+      }
+      layout->addWidget (browser);
+      dlg->setLayout (layout);
+      dlg->show ();
     });
   }
 
