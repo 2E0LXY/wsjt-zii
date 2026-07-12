@@ -841,7 +841,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   // needed to change.
   m_wideGraphDock = new QDockWidget (tr ("Waterfall"), this);
   m_wideGraphDock->setObjectName ("WideGraphDock");
-  m_wideGraphDock->setWidget (m_wideGraph);
+  m_wideGraphDock->setWidget (m_wideGraph.data ());
   m_wideGraph->setHostDock (m_wideGraphDock);
   m_wideGraphDock->setFeatures (QDockWidget::DockWidgetClosable |
                                  QDockWidget::DockWidgetMovable  |
