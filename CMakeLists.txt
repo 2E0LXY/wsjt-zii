@@ -2013,6 +2013,15 @@ if (WIN32)
   # ships labelled with whatever upstream snapshot this fork started from,
   # regardless of which vX.Y.Z tag actually produced it.
   set (CPACK_PACKAGE_FILE_NAME "wsjty-${VERSION_Z}-win64")
+  # Relaunch WSJT-Y once the installer's file-copy step is done. The
+  # obvious-looking CPACK_NSIS_MUI_FINISHPAGE_RUN variable only wires a
+  # checkbox on the *interactive* finish page — /S (silent) installs skip
+  # that page entirely, so the in-app auto-updater's silent install would
+  # complete correctly but never relaunch the app, leaving the user
+  # looking at a closed window with no obvious sign anything happened.
+  # EXTRA_INSTALL_COMMANDS runs as plain Section code, which executes
+  # regardless of silent/interactive mode.
+  set (CPACK_NSIS_EXTRA_INSTALL_COMMANDS "Exec '\"$INSTDIR\\wsjtx.exe\"'")
 elseif (APPLE)
   set (CPACK_GENERATOR "DragNDrop")
   set (CPACK_PACKAGE_FILE_NAME "wsjty-${VERSION_Z}-macos")

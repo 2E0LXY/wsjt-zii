@@ -16803,7 +16803,17 @@ void MainWindow::onUpdateAvailable(QString tag, QUrl winUrl, QUrl debUrl)
         f.close();
 
 #if defined(Q_OS_WIN)
-        // NSIS silent install — app restarts via installer
+        // NSIS silent install (/S). The installer itself launches WSJT-Y
+        // again once file copying is done — see
+        // CPACK_NSIS_EXTRA_INSTALL_COMMANDS in CMakeLists.txt, which runs
+        // unconditionally (silent or not), unlike CPACK_NSIS_MUI_FINISHPAGE_RUN
+        // which only wires up the interactive finish-page checkbox that
+        // /S mode skips entirely — that mismatch was the actual bug (the
+        // install completed fine, the app just never relaunched). Quit
+        // promptly after starting the installer so this process releases
+        // its file locks before the installer's copy step needs them —
+        // waiting here for the installer to finish while still fully
+        // resident would fight the installer for the same exe/DLL files.
         QProcess::startDetached(outPath, {"/S"});
         QApplication::quit();
 #else
