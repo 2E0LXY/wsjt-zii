@@ -302,18 +302,16 @@ void RemoteBridge::send_decode (QString const& utc_hms, int snr, double dt, quin
 }
 
 void RemoteBridge::send_status (Frequency dial_frequency, QString const& mode, QString const& dx_call,
+                                 QString const& tx_message,
                                  QString const& dx_grid, bool tx_enabled, bool transmitting)
 {
   last_status_ = QJsonObject {
       {"type", "status"}, {"dial_freq_hz", static_cast<double> (dial_frequency)},
       {"mode", mode}, {"dx_call", dx_call}, {"dx_grid", dx_grid},
+      {"tx_msg", tx_message},
       {"tx_enabled", tx_enabled}, {"transmitting", transmitting}
     };
-  send_json (QJsonObject {
-      {"type", "status"}, {"dial_freq_hz", static_cast<double> (dial_frequency)},
-      {"mode", mode}, {"dx_call", dx_call}, {"dx_grid", dx_grid},
-      {"tx_enabled", tx_enabled}, {"transmitting", transmitting}
-    });
+  send_json (last_status_);
 }
 
 void RemoteBridge::send_qso_logged (QString const& call, QString const& grid, Frequency dial_frequency,

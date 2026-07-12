@@ -12635,7 +12635,8 @@ void MainWindow::statusUpdate () const
                                   ftol, tr_period, m_multi_settings->configuration_name (),
                                   m_currentMessage);
   if (m_remoteBridge)
-    m_remoteBridge->send_status (m_freqNominal, m_mode, m_hisCall, m_hisGrid,
+    m_remoteBridge->send_status (m_freqNominal, m_mode, m_hisCall,
+                                  m_currentMessage.trimmed (), m_hisGrid,
                                   ui->autoButton->isChecked (), m_transmitting);
 }
 

@@ -71,6 +71,7 @@ public:
   void send_decode (QString const& utc_hms, int snr, double dt, quint32 audio_freq_hz,
                      QString const& mode, QString const& message, bool is_cq, bool for_me);
   void send_status (Frequency dial_frequency, QString const& mode, QString const& dx_call,
+                    QString const& tx_message,
                      QString const& dx_grid, bool tx_enabled, bool transmitting);
   void send_qso_logged (QString const& call, QString const& grid, Frequency dial_frequency,
                          QString const& mode, QString const& report_sent, QString const& report_rcvd);
