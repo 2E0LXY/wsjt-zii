@@ -15140,12 +15140,12 @@ void MainWindow::moveEvent(QMoveEvent *)
     m_lastX = this->pos().x();
     m_lastY = this->pos().y();
 
-    if  (m_wideGraph && m_wideGraph->isVisible()) {
-        int gx = m_wideGraph->pos().x();
-        int gy = m_wideGraph->pos().y();
-        m_wideGraph->move(gx-x,gy-y);
-    }
-
+    // Note: m_wideGraph is no longer tracked here -- it's a genuinely
+    // docked child widget now (see the WideGraph dock setup in the
+    // constructor), so it moves for free as part of this same window.
+    // The old pos()/move() tracking below was a simulated-docking hack
+    // for when it was still a separate top-level window; calling that on
+    // a layout-managed child widget doesn't do anything useful anymore.
     if (m_unfilteredView &&  m_unfilteredView->isVisible()) {
         int rx = m_unfilteredView->pos().x();
         int ry = m_unfilteredView->pos().y();
