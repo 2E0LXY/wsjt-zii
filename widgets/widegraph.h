@@ -2,7 +2,7 @@
 #ifndef WIDEGRAPH_H_
 #define WIDEGRAPH_H_
 
-#include <QDialog>
+#include <QWidget>
 #include <QScopedPointer>
 #include <QDir>
 #include <QHash>
@@ -19,14 +19,32 @@ namespace Ui {
 
 class QSettings;
 class Configuration;
+class QDockWidget;
 
-class WideGraph : public QDialog
+class WideGraph : public QWidget
 {
   Q_OBJECT
 
 public:
   explicit WideGraph(QSettings *, QWidget *parent = 0);
   ~WideGraph ();
+
+  // Hosting dock (set once, right after construction, by MainWindow). All
+  // the existing show()/hide()/showNormal() call sites throughout
+  // mainwindow.cpp keep working unchanged -- WideGraph mirrors its own
+  // visibility onto the dock via showEvent/hideEvent below, so callers
+  // don't need to know or care that this is now docked rather than a
+  // separate top-level window.
+  void setHostDock (QDockWidget * dock);
+
+  // The lower control strip (bins/pixel, palette, gain/zero sliders etc,
+  // shown via image 2's "Controls" checkbox) is relocated out of this
+  // widget's own layout into a new spot in the main window -- above the
+  // band-select/Auto Hop toolbar. MainWindow grabs this pointer once at
+  // startup and re-parents it there; on_cbControls_toggled() still just
+  // calls setVisible() on it, which works identically regardless of which
+  // layout it physically lives in.
+  QWidget * controlsWidget () const;
 
   void   dataSink2(float s[], float df3, int ihsym, int ndiskdata, float pdB);
   void   setRxFreq(int n);
@@ -72,6 +90,8 @@ public slots:
 protected:
   void keyPressEvent (QKeyEvent *e) override;
   void closeEvent (QCloseEvent *) override;
+  void showEvent (QShowEvent *) override;
+  void hideEvent (QHideEvent *) override;
 
 private slots:
   void on_waterfallAvgSpinBox_valueChanged(int arg1);
@@ -102,6 +122,7 @@ private:
   void replot();
 
   QScopedPointer<Ui::WideGraph> ui;
+  QDockWidget * m_hostDock = nullptr;
 
   QSettings * m_settings;
   QDir m_palettes_path;

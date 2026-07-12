@@ -805,7 +805,7 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   }
 
   // ── Band Activity toggle buttons: consistent on/off colouring ────────────
-  for (auto *btn : { ui->cbCQonly, ui->cbAutoCQ, ui->cbAutoCall, ui->cbHoldTxFreq, ui->txFirstCheckBox })
+  for (auto *btn : { ui->cbCQonly, ui->cbAutoCQ, ui->cbAutoCall, ui->cbHoldTxFreq, ui->txFirstCheckBox, ui->cbRxTxSame })
     btn->setStyleSheet(kToggleBtnQss);
 
   // ── Gen Msgs / Tx editor collapse toggle ──────────────────────────────────
@@ -830,6 +830,53 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
     const bool startVisible = m_settings->value("genMsgsEditorVisible", false).toBool();
     ui->controls_stack_widget->setVisible(startVisible);
     m_genMsgsToggleBtn->setArrowType(startVisible ? Qt::DownArrow : Qt::RightArrow);
+  }
+
+  // ── Waterfall: dock into the main window instead of a separate top-level
+  // window. m_wideGraph itself was already constructed (member initializer
+  // list); this just gives it a home. All the existing m_wideGraph->show()/
+  // hide()/showNormal() call sites elsewhere in this file keep working
+  // unchanged -- WideGraph mirrors its own visibility onto the dock via
+  // showEvent/hideEvent (see widegraph.cpp), so none of those call sites
+  // needed to change.
+  m_wideGraphDock = new QDockWidget (tr ("Waterfall"), this);
+  m_wideGraphDock->setObjectName ("WideGraphDock");
+  m_wideGraphDock->setWidget (m_wideGraph);
+  m_wideGraph->setHostDock (m_wideGraphDock);
+  m_wideGraphDock->setFeatures (QDockWidget::DockWidgetClosable |
+                                 QDockWidget::DockWidgetMovable  |
+                                 QDockWidget::DockWidgetFloatable);
+  m_wideGraphDock->setContextMenuPolicy (Qt::CustomContextMenu);
+  connect (m_wideGraphDock, &QWidget::customContextMenuRequested, this,
+           [this](QPoint const& pos) {
+    QMenu m;
+    m.addAction (tr ("Pin Left"),       [this]{ pinDockWidget (m_wideGraphDock, Qt::LeftDockWidgetArea,   "wideGraphArea"); });
+    m.addAction (tr ("Pin Right"),      [this]{ pinDockWidget (m_wideGraphDock, Qt::RightDockWidgetArea,  "wideGraphArea"); });
+    m.addAction (tr ("Pin Top"),        [this]{ pinDockWidget (m_wideGraphDock, Qt::TopDockWidgetArea,    "wideGraphArea"); });
+    m.addAction (tr ("Float (detach)"), [this]{ pinDockWidget (m_wideGraphDock, Qt::NoDockWidgetArea,     "wideGraphArea"); });
+    m.exec (m_wideGraphDock->mapToGlobal (pos));
+  });
+  {
+    const QString area = m_settings->value ("wideGraphArea", "top").toString ();
+    if (area == "left")       pinDockWidget (m_wideGraphDock, Qt::LeftDockWidgetArea,  QString ());
+    else if (area == "right") pinDockWidget (m_wideGraphDock, Qt::RightDockWidgetArea, QString ());
+    else if (area == "float") pinDockWidget (m_wideGraphDock, Qt::NoDockWidgetArea,    QString ());
+    else                      pinDockWidget (m_wideGraphDock, Qt::TopDockWidgetArea,   QString ());
+  }
+  registerDockInViewMenu (m_wideGraphDock, tr ("Waterfall"));
+
+  // The waterfall's own lower "Controls" strip (bins/pixel, palette, gain/
+  // zero sliders, etc — toggled via the Controls checkbox overlaid on the
+  // waterfall itself) is relocated out of the waterfall dock into its own
+  // toolbar, positioned above Band Select/Auto Hop. on_cbControls_toggled()
+  // still just calls setVisible() on this same widget, unchanged, so the
+  // existing checkbox keeps controlling it correctly regardless of which
+  // layout it now physically lives in.
+  {
+    auto *wfControlsBar = addToolBar (tr ("Waterfall Controls"));
+    wfControlsBar->setObjectName ("WideGraphControlsToolbar");
+    wfControlsBar->setMovable (false);
+    wfControlsBar->addWidget (m_wideGraph->controlsWidget ());
   }
 
   // ── Band quick-select toolbar (WSJT-X Improved) ──────────────────────────────
@@ -1988,6 +2035,7 @@ void MainWindow::writeSettings()
   m_settings->setValue("GUItab",ui->tabWidget->currentIndex());
   m_settings->setValue("OutBufSize",outBufSize);
   m_settings->setValue ("HoldTxFreq", ui->cbHoldTxFreq->isChecked ());
+  m_settings->setValue ("RxTxSame", ui->cbRxTxSame->isChecked ());
   m_settings->setValue("PctTx", ui->sbTxPercent->value ());
   m_settings->setValue("RoundRobin",ui->RoundRobin->currentText());
   m_settings->setValue("dBm",m_dBm);
@@ -2440,6 +2488,7 @@ void MainWindow::readSettings()
   }
   outBufSize=m_settings->value("OutBufSize",4096).toInt();
   ui->cbHoldTxFreq->setChecked (m_settings->value ("HoldTxFreq", false).toBool ());
+  ui->cbRxTxSame->setChecked (m_settings->value ("RxTxSame", false).toBool ());
   m_pwrBandTxMemory=m_settings->value("pwrBandTxMemory").toHash();
   m_pwrBandTuneMemory=m_settings->value("pwrBandTuneMemory").toHash();
   ui->actionEnable_AP_FT8->setChecked (m_settings->value ("FT8AP", false).toBool());
@@ -4220,6 +4269,7 @@ void MainWindow::closeEvent(QCloseEvent * e)
   m_valid = false;              // suppresses subprocess errors
   m_config.transceiver_offline ();
   writeSettings ();
+  if (m_wideGraph) m_wideGraph->saveSettings ();
   if(m_astroWidget) m_astroWidget.reset ();
   m_guiTimer.stop ();
   m_prefixes.reset ();
@@ -10696,7 +10746,10 @@ void MainWindow::on_TxFreqSpinBox_valueChanged(int n)
 {
   m_config.transceiver_tune (false);  // reset rig tuning
   m_wideGraph->setTxFreq(n);
-//  if (ui->cbHoldTxFreq->isChecked ()) ui->RxFreqSpinBox->setValue(n);
+  // Rx=Tx lock — see on_RxFreqSpinBox_valueChanged for the matching half.
+  if (ui->cbRxTxSame->isChecked() && ui->RxFreqSpinBox->value() != n) {
+    ui->RxFreqSpinBox->setValue(n);
+  }
   if(m_mode!="MSK144") {
     if (m_tci_audio) Q_EMIT m_config.transceiver_trfrequency(n - m_XIT);
     else Q_EMIT transmitFrequency (n - m_XIT);
@@ -10723,6 +10776,14 @@ void MainWindow::on_RxFreqSpinBox_valueChanged(int n)
   m_wideGraph->setRxFreq(n);
   if (m_mode == "FreqCal") {
     setRig ();
+  }
+  // Rx=Tx lock: every path that changes Rx frequency flows through here —
+  // manual spinner, double-clicking a decode, and remote app commands
+  // (on_dxMapStationClicked/DoubleClicked both call RxFreqSpinBox->setValue)
+  // — so this one hook covers all of them, including "if a command comes
+  // from the app, always make this happen".
+  if (ui->cbRxTxSame->isChecked() && ui->TxFreqSpinBox->value() != n) {
+    ui->TxFreqSpinBox->setValue(n);
   }
   if (m_mode != "MSK144" && m_mode != "FST4W" && m_mode != "WSPR" && m_mode != "Echo" && m_mode != "FreqCal"
       && !(SpecOp::HOUND == m_specOp && m_config.superFox())) {
@@ -16582,6 +16643,14 @@ void MainWindow::on_dxMapStationDoubleClicked(QString call, int freqHz, QString 
     genStdMsgs(call);
     setTxMsg(1);                              // Tx1 = "CALL MYCALL MYGRID" ready to send
     ui->txFirstCheckBox->setChecked(m_txFirst);
+
+    // Rx=Tx lock: belt-and-suspenders — genStdMsgs()/setTxMsg() above could
+    // in principle set Tx to the called station's own offset; if the lock
+    // is on, the last word belongs to it, not to whatever offset they were
+    // heard on. This is the "app command" case the lock exists for.
+    if (ui->cbRxTxSame->isChecked() && ui->TxFreqSpinBox->value() != ui->RxFreqSpinBox->value()) {
+      ui->TxFreqSpinBox->setValue(ui->RxFreqSpinBox->value());
+    }
 
     if (!ui->autoButton->isChecked()) {
         ui->autoButton->click();              // Enable Tx — starts calling the station

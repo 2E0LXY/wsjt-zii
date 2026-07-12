@@ -5,6 +5,7 @@
 #include <QSettings>
 #include <QDateTime>
 #include <QKeyEvent>
+#include <QDockWidget>
 #include <math.h>
 #include "ui_widegraph.h"
 #include "commons.h"
@@ -14,7 +15,7 @@
 #include "moc_widegraph.cpp"
 
 WideGraph::WideGraph(QSettings * settings, QWidget *parent) :
-  QDialog(parent),
+  QWidget(parent),
   ui(new Ui::WideGraph),
   m_settings (settings),
   m_palettes_path {":/Palettes"},
@@ -25,8 +26,6 @@ WideGraph::WideGraph(QSettings * settings, QWidget *parent) :
 {
   ui->setupUi(this);
 
-  setWindowTitle (QApplication::applicationName () + " - " + tr ("Wide Graph"));
-  setWindowFlags (Qt::WindowCloseButtonHint | Qt::WindowMinimizeButtonHint);
   setMaximumWidth (MAX_SCREENSIZE);
   setMaximumHeight (880);
 
@@ -124,7 +123,29 @@ WideGraph::~WideGraph ()
 void WideGraph::closeEvent (QCloseEvent * e)
 {
   saveSettings ();
-  QDialog::closeEvent (e);
+  QWidget::closeEvent (e);
+}
+
+void WideGraph::showEvent (QShowEvent * e)
+{
+  if (m_hostDock && !m_hostDock->isVisible ()) m_hostDock->setVisible (true);
+  QWidget::showEvent (e);
+}
+
+void WideGraph::hideEvent (QHideEvent * e)
+{
+  if (m_hostDock && m_hostDock->isVisible ()) m_hostDock->setVisible (false);
+  QWidget::hideEvent (e);
+}
+
+void WideGraph::setHostDock (QDockWidget * dock)
+{
+  m_hostDock = dock;
+}
+
+QWidget * WideGraph::controlsWidget () const
+{
+  return ui->controls_widget;
 }
 
 void WideGraph::saveSettings()                                           //saveSettings

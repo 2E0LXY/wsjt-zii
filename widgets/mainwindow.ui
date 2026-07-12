@@ -409,6 +409,22 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QToolButton" name="cbRxTxSame">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When on, Rx and Tx frequency are always kept identical — changing one always changes the other, including replies triggered from the Android remote app. No split operation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>Rx=Tx</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="toolButtonStyle">
+               <enum>Qt::ToolButtonTextOnly</enum>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>

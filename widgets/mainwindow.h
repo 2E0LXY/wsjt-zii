@@ -573,6 +573,7 @@ private:
   QScopedPointer<EqualizationToolsDialog> m_equalizationToolsDialog;
 
   QScopedPointer<WideGraph> m_wideGraph;
+  QDockWidget * m_wideGraphDock = nullptr;
   QScopedPointer<EchoGraph> m_echoGraph;
   QScopedPointer<FastGraph> m_fastGraph;
   QScopedPointer<LogQSO> m_logDlg;

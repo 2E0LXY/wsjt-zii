@@ -1,5 +1,6 @@
 #include "plotter.h"
 #include <math.h>
+#include <algorithm>
 #include <QAction>
 #include <QMenu>
 #include <QPainter>
@@ -721,6 +722,14 @@ void CPlotter::DrawOverlay()                   //DrawOverlay()
   // "CQ:" = blue bg + white text
   // "ME:" = flashing red bg + white text (calling my station)
   // plain  = dark bg + grey text (other directed)
+  //
+  // Labels are laid out to avoid overlapping: sorted by frequency, placed
+  // greedily left-to-right on one of two rows, shifting right just enough
+  // to clear the previous label on that row (or dropping to the second
+  // row if that would push it off-screen). A label that ends up shifted
+  // away from its true frequency gets a short leader line back down to
+  // it, so nothing is ever silently hidden behind another label — it's
+  // always at least legible and traceable to the right spot on the dial.
   if(m_bShowDecodeLabels && !m_decodeLabels.isEmpty()) {
     QFont lf = overPainter.font();
     lf.setPointSize(7);
@@ -729,47 +738,107 @@ void CPlotter::DrawOverlay()                   //DrawOverlay()
     QFontMetrics fm(lf);
     const bool flashOn = (QTime::currentTime().msec() < 500);  // 1Hz flash for ME labels
 
+    struct LabelLayout {
+      int fx;                 // true x position (from frequency)
+      int priority;           // 0=ME, 1=CQ, 2=plain -- placed in this order so
+                               // the most important labels claim space first
+      QString label;
+      QColor bgColor, textColor;
+      bool flash;
+      int row = 0;
+      int tx = 0;              // assigned (possibly shifted) x position
+      int width = 0;
+    };
+
+    QList<LabelLayout> items;
+    items.reserve(m_decodeLabels.size());
     for(auto const& pair : m_decodeLabels) {
       int fx = XfromFreq(float(pair.first));
       if(fx < 0 || fx > m_w) continue;
       QString raw = pair.second.trimmed();
-      QColor bgColor, textColor;
-      QString label;
-      bool flash = false;
-
+      LabelLayout it;
+      it.fx = fx;
       if(raw.startsWith("CQ:")) {
-        label     = raw.mid(3).left(10);
-        bgColor   = QColor(0, 80, 180, 200);    // deep blue background
-        textColor = QColor(255, 255, 255);       // white text
+        it.label     = raw.mid(3).left(10);
+        it.bgColor   = QColor(0, 80, 180, 200);
+        it.textColor = QColor(255, 255, 255);
+        it.priority  = 1;
       } else if(raw.startsWith("ME:")) {
-        label     = raw.mid(3).left(10);
-        bgColor   = flashOn ? QColor(200,20,20,220) : QColor(120,10,10,180);  // flashing red
-        textColor = QColor(255, 255, 255);
-        flash     = true;
+        it.label     = raw.mid(3).left(10);
+        it.bgColor   = flashOn ? QColor(200,20,20,220) : QColor(120,10,10,180);
+        it.textColor = QColor(255, 255, 255);
+        it.flash     = true;
+        it.priority  = 0;
       } else {
-        label     = raw.left(10);
-        bgColor   = QColor(10, 20, 35, 160);
-        textColor = QColor(160, 170, 190);
+        it.label     = raw.left(10);
+        it.bgColor   = QColor(10, 20, 35, 160);
+        it.textColor = QColor(160, 170, 190);
+        it.priority  = 2;
+      }
+      it.width = fm.boundingRect(it.label).width() + 6;   // + a little breathing room
+      items.append(it);
+    }
+
+    // Place highest-priority labels first so ME/CQ callsigns are never
+    // the ones pushed aside; within a priority tier, place left to right.
+    std::stable_sort(items.begin(), items.end(), [](LabelLayout const& a, LabelLayout const& b) {
+      if (a.priority != b.priority) return a.priority < b.priority;
+      return a.fx < b.fx;
+    });
+
+    static constexpr int kGap = 3;
+    int rowRightEdge[2] = { -1000, -1000 };   // rightmost occupied x on each row so far
+
+    for (auto& it : items) {
+      int naturalTx = qBound(0, it.fx - it.width/2, m_w - it.width);
+      int chosenRow = 0;
+      int chosenTx  = naturalTx;
+
+      if (naturalTx >= rowRightEdge[0] + kGap) {
+        chosenRow = 0;
+        chosenTx  = naturalTx;
+      } else if (naturalTx >= rowRightEdge[1] + kGap) {
+        chosenRow = 1;
+        chosenTx  = naturalTx;
+      } else {
+        // Both rows already occupied at this frequency -- shift right on
+        // whichever row has more room left before running off the plot,
+        // rather than overlapping the previous label.
+        const int shiftedRow0 = rowRightEdge[0] + kGap;
+        const int shiftedRow1 = rowRightEdge[1] + kGap;
+        if (shiftedRow0 <= m_w - it.width || shiftedRow0 <= shiftedRow1) {
+          chosenRow = 0;
+          chosenTx  = qMin(shiftedRow0, m_w - it.width);
+        } else {
+          chosenRow = 1;
+          chosenTx  = qMin(shiftedRow1, m_w - it.width);
+        }
       }
 
-      QRect textRect = fm.boundingRect(label);
-      int tx = qBound(0, fx - textRect.width()/2, m_w - textRect.width());
-      int ty = 20;
+      it.row = chosenRow;
+      it.tx  = chosenTx;
+      rowRightEdge[chosenRow] = chosenTx + it.width;
+    }
 
-      // Background pill — taller for ME labels
-      const int padV = flash ? 3 : 2;
-      overPainter.setPen(flash ? QPen(QColor(255,80,80,180),1) : Qt::NoPen);
-      overPainter.setBrush(bgColor);
-      overPainter.drawRoundedRect(tx-3, ty-textRect.height()-padV,
-                                  textRect.width()+6, textRect.height()+padV*2, 3, 3);
-      // Label text
-      overPainter.setPen(textColor);
-      overPainter.drawText(tx, ty, label);
+    for (auto const& it : items) {
+      const int ty = 20 + it.row * 15;
+      QRect textRect = fm.boundingRect(it.label);
 
-      // Tick mark down to frequency line for ME labels
-      if(flash) {
-        overPainter.setPen(QPen(QColor(255,100,100,160),1));
-        overPainter.drawLine(fx, ty+2, fx, ty+14);
+      const int padV = it.flash ? 3 : 2;
+      overPainter.setPen(it.flash ? QPen(QColor(255,80,80,180),1) : Qt::NoPen);
+      overPainter.setBrush(it.bgColor);
+      overPainter.drawRoundedRect(it.tx-3, ty-textRect.height()-padV,
+                                  it.width, textRect.height()+padV*2, 3, 3);
+      overPainter.setPen(it.textColor);
+      overPainter.drawText(it.tx, ty, it.label);
+
+      // Leader line back to the true frequency, whenever the label had to
+      // be shifted away from its natural centred position (or always, for
+      // flashing ME labels, matching the previous behaviour).
+      const int labelCentre = it.tx + it.width/2;
+      if (it.flash || qAbs(labelCentre - it.fx) > 2) {
+        overPainter.setPen(QPen(it.flash ? QColor(255,100,100,160) : QColor(120,130,150,120), 1));
+        overPainter.drawLine(it.fx, ty+2, it.fx, ty+14);
       }
     }
   }
