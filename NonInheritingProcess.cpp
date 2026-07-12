@@ -17,6 +17,12 @@
 #include <windows.h>
 #endif
 
+#ifdef Q_OS_LINUX
+#include <sys/prctl.h>
+#include <csignal>
+#include <unistd.h>
+#endif
+
 #include <memory>
 #include <functional>
 
@@ -163,3 +169,24 @@ NonInheritingProcess::NonInheritingProcess (QObject * parent)
 NonInheritingProcess::~NonInheritingProcess ()
 {
 }
+
+#ifdef Q_OS_LINUX
+void NonInheritingProcess::setupChildProcess ()
+{
+  // Ask the kernel to send us SIGKILL if our parent (wsjtx) dies for any
+  // reason -- crash, kill -9, power loss -- before it gets a chance to
+  // terminate us itself.
+  ::prctl (PR_SET_PDEATHSIG, SIGKILL);
+
+  // Race guard: PR_SET_PDEATHSIG is relative to whoever is our parent
+  // *right now*. If wsjtx already died in the (very narrow) window
+  // between fork() and the prctl() call above, we've already been
+  // reparented (to init/systemd) and the signal above will never fire --
+  // so check for that directly and self-terminate rather than risk
+  // becoming exactly the orphaned decoder process this exists to avoid.
+  if (::getppid () == 1)
+    {
+      ::_exit (1);
+    }
+}
+#endif

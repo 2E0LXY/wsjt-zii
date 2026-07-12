@@ -28,6 +28,17 @@ public:
   NonInheritingProcess (QObject * parent = nullptr);
   ~NonInheritingProcess ();
 
+protected:
+#ifdef Q_OS_LINUX
+  // Runs in the child, right after fork() and before exec() on Linux.
+  // Sets PR_SET_PDEATHSIG so the kernel kills this child automatically
+  // if wsjtx dies without a chance to clean up (crash, kill -9, power
+  // loss) -- the Linux equivalent of the Windows Job Object below, so
+  // jt9 doesn't outlive an abnormal exit. PR_SET_PDEATHSIG is Linux-
+  // specific (not available via macOS/BSD's more general Q_OS_UNIX).
+  void setupChildProcess () override;
+#endif
+
 private:
   class impl;
   pimpl<impl> m_;

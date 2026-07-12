@@ -1879,13 +1879,19 @@ install (DIRECTORY
 
 # OpenSSL runtime DLLs for PSKReporter / hamlib network TLS on Windows.
 # Without these Qt's QSslSocket reports "TLS initialization failed" and
-# PSKReporter spotting fails. Mirrors wsjtx-orig.
+# PSKReporter spotting fails. Must match whatever OpenSSL major version
+# MSYS2's mingw-w64-x86_64-openssl package actually ships (currently
+# 3.x, filenames libssl-3-x64.dll / libcrypto-3-x64.dll) -- the CI
+# workflow overwrites contrib/tls/ with the live DLLs from the build
+# environment before this runs, so these paths stay correct even when
+# MSYS2 rolls OpenSSL forward again. A prior version of this bundled
+# stale committed OpenSSL 1.1.1 DLLs, which don't match Qt5's actual
+# 3.x build here and don't even share a filename convention -- that
+# was the actual cause of the "TLS initialization failed" report.
 if (WIN32)
   install (FILES
-    contrib/tls/libssl-1_1.dll
-    contrib/tls/libcrypto-1_1.dll
-    contrib/tls/libssl-1_1-x64.dll
-    contrib/tls/libcrypto-1_1-x64.dll
+    contrib/tls/libssl-3-x64.dll
+    contrib/tls/libcrypto-3-x64.dll
     DESTINATION ${CMAKE_INSTALL_BINDIR}
     #COMPONENT runtime
   )
