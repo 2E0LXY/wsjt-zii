@@ -2029,7 +2029,20 @@ if (WIN32)
   # underlying Windows CreateProcess call both accept forward slashes in
   # paths interchangeably with backslashes, so this avoids the ambiguity
   # entirely rather than trying to get multi-layer escaping exactly right.
-  set (CPACK_NSIS_EXTRA_INSTALL_COMMANDS "Exec '\"$INSTDIR/wsjtx.exe\"'")
+  #
+  # $\" (NOT a literal ") deliberately too: reproduced this locally by
+  # running cmake -P against CPack's own generated CPackConfig.cmake --
+  # CPack's variable serializer does not correctly round-trip ANY value
+  # containing a bare embedded double-quote character when it re-writes
+  # that file (regardless of how carefully it was escaped in this file);
+  # it comes out the other side as an unescaped " that prematurely closes
+  # the CMake string ("Argument not separated from preceding token by
+  # whitespace", then NSIS compilation fails outright). $\" is NSIS's own
+  # escape sequence for a literal quote, resolved entirely by NSIS itself
+  # at compile time -- the value handed to CMake/CPack never contains a
+  # bare " character at all, so the bug in CPack's serializer never gets
+  # a chance to trigger.
+  set (CPACK_NSIS_EXTRA_INSTALL_COMMANDS "Exec '$\\\"$INSTDIR/wsjtx.exe$\\\"'")
 elseif (APPLE)
   set (CPACK_GENERATOR "DragNDrop")
   set (CPACK_PACKAGE_FILE_NAME "wsjty-${VERSION_Z}-macos")
