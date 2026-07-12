@@ -63,7 +63,7 @@ void PSKReporterWidget::refresh(bool init) {
 void PSKReporterWidget::responseHandler(QNetworkReply * reply) {
     if(reply->error() == QNetworkReply::NoError) {
        QString data = (QString)reply->readAll();
-       if (data.length()) updateTable(data);
+       updateTable(data);
 
     } else {
         ui->pskTable->setRowCount(0);
@@ -140,6 +140,11 @@ void PSKReporterWidget::updateTable(QString data) {
     }
 
     emit reportsUpdated(receiver_records);
+    if (receiver_records.isEmpty()) {
+        ui->pskTable->insertRow(0);
+        ui->pskTable->setItem(0, 0, new QTableWidgetItem(
+            QStringLiteral("No spots for %1 in the last hour").arg(m_config->my_callsign())));
+    }
     QTimer::singleShot (0, this, SLOT (scrollToBottom()));
 
 }

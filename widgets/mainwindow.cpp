@@ -15200,10 +15200,12 @@ void MainWindow::showEvent(QShowEvent *)
     if (m_unfilteredView) {
         m_unfilteredView->show();
     }
-
-    if (m_pskReporterView) {
-        m_pskReporterView->show();
-    }
+    // PSK Reporter deliberately excluded — it should only ever open via
+    // explicit user action (Decode -> PSK Reporter), never tied to the
+    // main window's own show/restore lifecycle. This was the actual
+    // remaining cause of it "popping up even when unticked": whatever
+    // PSK-Reporter-specific toggle the user was unchecking didn't gate
+    // this particular trigger at all.
 }
 
 void MainWindow::changeEvent(QEvent* event)
@@ -15218,9 +15220,6 @@ void MainWindow::changeEvent(QEvent* event)
             }
             if (m_unfilteredView) {
                 m_unfilteredView->show();
-            }
-            if (m_pskReporterView) {
-                m_pskReporterView->show();
             }
         }
     }
