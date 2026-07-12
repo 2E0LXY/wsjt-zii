@@ -29,7 +29,7 @@ void VersionChecker::startChecking()
 
 void VersionChecker::poll()
 {
-    QNetworkRequest req {QUrl{"https://api.github.com/repos/2E0LXY/wsjt-zii/releases/latest"}};
+    QNetworkRequest req {QUrl{"https://api.github.com/repos/2E0LXY/wsjt-y/releases/latest"}};
     req.setRawHeader("User-Agent",  "WSJT-Y-AutoUpdater");
     req.setRawHeader("Accept",      "application/vnd.github+json");
     m_nam.get(req);

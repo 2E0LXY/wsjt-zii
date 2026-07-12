@@ -11,7 +11,7 @@
 | Windows 10/11 64-bit | `wsjty-3.4.0-win64.exe` |
 | Debian 12 / Ubuntu 22.04 | `wsjty_3.4.0_amd64.deb` |
 
-**https://github.com/2E0LXY/wsjt-zii/releases/latest**
+**https://github.com/2E0LXY/wsjt-y/releases/latest**
 
 SHA256 checksums on the releases page.
 
@@ -177,4 +177,4 @@ WSJT-Y is distributed under **GNU GPL v3.0**, the same licence as WSJT-X and WSJ
 - NMS decoder: © IU8LMC (Carmine Vitiello), GPL-3.0
 - DX Station Map background (`images/worldmap.jpg`): NASA Blue Marble imagery, courtesy Reto Stockli (NASA/GSFC) — public domain (US Government work)
 
-Issues: **https://github.com/2E0LXY/wsjt-zii/issues**
+Issues: **https://github.com/2E0LXY/wsjt-y/issues**

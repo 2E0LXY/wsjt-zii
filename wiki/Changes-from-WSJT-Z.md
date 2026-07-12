@@ -1,6 +1,6 @@
 # Changes from WSJT-Z
 
-All changes in WSJT-Zii relative to [sq9fve/wsjt-z](https://github.com/sq9fve/wsjt-z) v2.0.16 (based on WSJT-X 3.0.0).
+All changes in WSJT-Y relative to [sq9fve/wsjt-z](https://github.com/sq9fve/wsjt-z) v2.0.16 (based on WSJT-X 3.0.0).
 
 ---
 
