@@ -596,6 +596,19 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
   m_block_udp_status_updates {false}
 {
   ui->setupUi(this);
+  // Previously docks could only snap to the four QMainWindow edge areas
+  // (see pinDockWidget()'s Pin Left/Right/Top menu below) and shared any
+  // given area as tabs rather than a real layout. Qt's own dock-splitting
+  // drag targets -- drop on another dock's top/bottom/left/right edge to
+  // split there -- only appear once nesting is enabled, so this is what
+  // was actually gating "drag a panel wherever I want it" rather than any
+  // missing custom drag/drop code. GroupedDragging lets a whole tab stack
+  // move as one drag instead of just the front tab.
+  setDockNestingEnabled (true);
+  setDockOptions (QMainWindow::AnimatedDocks
+                   | QMainWindow::AllowNestedDocks
+                   | QMainWindow::AllowTabbedDocks
+                   | QMainWindow::GroupedDragging);
   ui->cb_autoModeSwitch->setContextMenuPolicy (Qt::CustomContextMenu);
   update_auto_mode_switch_widget ();
   m_watchdogAnchorUtc = QDateTime::currentDateTimeUtc ();
