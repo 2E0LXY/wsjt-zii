@@ -1080,6 +1080,26 @@ MainWindow::MainWindow(QDir const& temp_directory, bool multiple,
     if (ui->autoButton->isChecked ()) ui->autoButton->click ();
   });
   connect (m_remoteBridge, &RemoteBridge::set_band_requested, this, &MainWindow::handleRemoteSetBand);
+  connect (m_remoteBridge, &RemoteBridge::set_mode_requested, this, [this](QString mode) {
+    // Dispatch through the same QAction each mode's own menu item triggers,
+    // rather than duplicating any of the mode-specific setup each
+    // on_actionXXX_triggered() handler does (sample rates, FFT size, TR
+    // period, etc) -- this exercises the exact same code path as clicking
+    // Mode -> FT8 by hand.
+    mode = mode.trimmed().toUpper();
+    QAction *action = nullptr;
+    if      (mode == "FT8")    action = ui->actionFT8;
+    else if (mode == "FT4")    action = ui->actionFT4;
+    else if (mode == "MSK144") action = ui->actionMSK144;
+    else if (mode == "Q65")    action = ui->actionQ65;
+    else if (mode == "JT65")   action = ui->actionJT65;
+    else if (mode == "JT9")    action = ui->actionJT9;
+    else if (mode == "JT4")    action = ui->actionJT4;
+    else if (mode == "WSPR")   action = ui->actionWSPR;
+    else if (mode == "FST4")   action = ui->actionFST4;
+    else if (mode == "FST4W")  action = ui->actionFST4W;
+    if (action) action->trigger ();
+  });
   connect (m_remoteBridge, &RemoteBridge::set_auto_cq_requested, this, [this](bool on) {
     if (ui->cbAutoCQ->isEnabled () && ui->cbAutoCQ->isChecked () != on) ui->cbAutoCQ->setChecked (on);
   });

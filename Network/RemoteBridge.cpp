@@ -274,6 +274,10 @@ void RemoteBridge::handle_incoming_json (QString const& message)
       Q_EMIT set_band_requested (static_cast<Frequency> (obj.value ("freq_hz").toDouble (0)),
                                   obj.value ("band").toString ());
     }
+  else if ("set_mode" == type)
+    {
+      Q_EMIT set_mode_requested (obj.value ("mode").toString ());
+    }
   else if ("set_auto_cq" == type)
     {
       Q_EMIT set_auto_cq_requested (obj.value ("on").toBool (false));

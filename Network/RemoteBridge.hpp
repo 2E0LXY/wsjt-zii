@@ -83,6 +83,7 @@ Q_SIGNALS:
   void reply_requested (QString call, QString grid, quint32 audio_freq_hz);
   void halt_tx_requested ();
   void set_band_requested (Frequency freq_hz, QString band_name);
+  void set_mode_requested (QString mode);
   void set_auto_cq_requested (bool on);
   void set_cq_only_requested (bool on);
   void connection_state_changed (bool connected);          // relay mode
