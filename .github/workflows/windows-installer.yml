@@ -79,7 +79,7 @@ jobs:
             https://raw.githubusercontent.com/VE3NEA/OmniRig/master/OmniRig.tlb
           ls -la OmniRig.tlb
 
-      - name: Refresh bundled OpenSSL DLLs from the live MSYS2 environment
+      - name: Refresh bundled runtime DLLs from the live MSYS2 environment
         run: |
           # contrib/tls/ previously held committed OpenSSL 1.1.1 DLLs, which
           # is why PSK Reporter reported "TLS initialization failed" despite
@@ -89,10 +89,12 @@ jobs:
           # major version and a different filename entirely from the 1.1.x
           # DLLs that were committed. Copying the live files from this run's
           # actual toolchain guarantees they always match, instead of
-          # silently drifting out of sync whenever MSYS2 rolls OpenSSL
-          # forward again.
-          cp /mingw64/bin/libssl-3-x64.dll   contrib/tls/libssl-3-x64.dll
+          # silently drifting out of sync whenever MSYS2 rolls a dependency
+          # forward again. zlib1.dll (Qt5Core's own dependency) gets the
+          # same treatment for the same reason.
+          cp /mingw64/bin/libssl-3-x64.dll    contrib/tls/libssl-3-x64.dll
           cp /mingw64/bin/libcrypto-3-x64.dll contrib/tls/libcrypto-3-x64.dll
+          cp /mingw64/bin/zlib1.dll           contrib/tls/zlib1.dll
           ls -la contrib/tls/
 
       - name: Build and install Hamlib 4.5.5 from source

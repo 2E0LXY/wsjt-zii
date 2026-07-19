@@ -144,8 +144,30 @@ int main(int argc, char *argv[])
       // reset the C+ & C global locales to the classic C locale
       std::locale::global (std::locale::classic ());
 
+      // One-time settings migration: the config file name is derived
+      // directly from applicationName() (see MultiSettings::settings_path())
+      // -- WSJT-Y was previously misnamed "WSJT-X" here, meaning every
+      // existing install's configuration (callsign, grid, rig setup,
+      // remote control password, everything) lives in WSJT-X.ini. Simply
+      // renaming the string below to "WSJT-Y" would silently reset every
+      // existing user back to defaults, since the app would look for a
+      // WSJT-Y.ini that doesn't exist yet. Copy (not move, so the old
+      // file is left untouched in case anything goes wrong) the old file
+      // to the new name once, before applicationName is ever set to the
+      // new value.
+      {
+        auto const& config_directory = QStandardPaths::writableLocation (QStandardPaths::ConfigLocation);
+        QDir config_dir {config_directory};
+        auto const old_path = config_dir.absoluteFilePath ("WSJT-X.ini");
+        auto const new_path = config_dir.absoluteFilePath ("WSJT-Y.ini");
+        if (QFile::exists (old_path) && !QFile::exists (new_path))
+          {
+            QFile::copy (old_path, new_path);
+          }
+      }
+
       // Override programs executable basename as application name.
-      a.setApplicationName ("WSJT-X");
+      a.setApplicationName ("WSJT-Y");
       a.setApplicationVersion (version ());
 
       QCommandLineParser parser;

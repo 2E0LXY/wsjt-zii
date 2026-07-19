@@ -1877,24 +1877,44 @@ install (DIRECTORY
   #COMPONENT runtime
   )
 
-# OpenSSL runtime DLLs for PSKReporter / hamlib network TLS on Windows.
-# Without these Qt's QSslSocket reports "TLS initialization failed" and
-# PSKReporter spotting fails. Must match whatever OpenSSL major version
-# MSYS2's mingw-w64-x86_64-openssl package actually ships (currently
-# 3.x, filenames libssl-3-x64.dll / libcrypto-3-x64.dll) -- the CI
-# workflow overwrites contrib/tls/ with the live DLLs from the build
-# environment before this runs, so these paths stay correct even when
-# MSYS2 rolls OpenSSL forward again. A prior version of this bundled
-# stale committed OpenSSL 1.1.1 DLLs, which don't match Qt5's actual
-# 3.x build here and don't even share a filename convention -- that
-# was the actual cause of the "TLS initialization failed" report.
+# Runtime DLLs for Windows that aren't picked up automatically: OpenSSL
+# (PSKReporter/hamlib TLS -- see comment below) and zlib (Qt5 links
+# against it; without it present alongside the exe, Windows silently
+# fails to load Qt5Core and the app won't start). Must match whatever
+# versions MSYS2's packages actually ship -- the CI workflow overwrites
+# contrib/tls/ with the live DLLs from the build environment before this
+# runs, so these paths stay correct even when MSYS2 rolls a dependency
+# forward. A prior version of this bundled stale committed OpenSSL 1.1.1
+# DLLs, which didn't match Qt5's actual 3.x build here and didn't even
+# share a filename convention -- that was the actual cause of the
+# "TLS initialization failed" report.
 if (WIN32)
   install (FILES
     contrib/tls/libssl-3-x64.dll
     contrib/tls/libcrypto-3-x64.dll
+    contrib/tls/zlib1.dll
     DESTINATION ${CMAKE_INSTALL_BINDIR}
     #COMPONENT runtime
   )
+endif (WIN32)
+
+# Kill any running WSJT-Y/decoder process before install or uninstall.
+# Without this, upgrading over a running installation (or uninstalling
+# while it's still open) leaves the exe/DLLs locked by Windows -- the
+# installer/uninstaller can't overwrite or delete them, which is exactly
+# what was reported as "cannot remove these DLLs, prevents further
+# installs". taskkill exit codes are deliberately ignored (process may
+# simply not be running) via nsExec::Exec, which also runs silently
+# rather than popping a console window mid-install.
+if (WIN32)
+  set (CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS
+    "nsExec::Exec 'taskkill /IM wsjtx.exe /F'
+nsExec::Exec 'taskkill /IM jt9.exe /F'
+Sleep 500")
+  set (CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
+    "nsExec::Exec 'taskkill /IM wsjtx.exe /F'
+nsExec::Exec 'taskkill /IM jt9.exe /F'
+Sleep 500")
 endif (WIN32)
 
 #
